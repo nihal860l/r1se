@@ -4,6 +4,7 @@ export interface Exercise {
   category: 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'cardio';
   muscleGroup: string;
   description: string;
+  isCustom?: boolean;
 }
 
 export interface WorkoutExercise {
