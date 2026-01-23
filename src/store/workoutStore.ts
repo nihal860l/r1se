@@ -6,11 +6,15 @@ interface WorkoutState {
   workouts: Workout[];
   workoutLogs: WorkoutLog[];
   customExercises: Exercise[];
+  customMuscleGroups: string[];
+  exerciseMuscleOverrides: Record<string, string>; // exerciseId -> muscleGroup
   addWorkout: (workout: Workout) => void;
   deleteWorkout: (id: string) => void;
   addWorkoutLog: (log: WorkoutLog) => void;
   addCustomExercise: (exercise: Exercise) => void;
   deleteCustomExercise: (id: string) => void;
+  addCustomMuscleGroup: (muscleGroup: string) => void;
+  setExerciseMuscleGroup: (exerciseId: string, muscleGroup: string) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -19,6 +23,8 @@ export const useWorkoutStore = create<WorkoutState>()(
       workouts: [],
       workoutLogs: [],
       customExercises: [],
+      customMuscleGroups: [],
+      exerciseMuscleOverrides: {},
       addWorkout: (workout) =>
         set((state) => ({ workouts: [...state.workouts, workout] })),
       deleteWorkout: (id) =>
@@ -32,6 +38,19 @@ export const useWorkoutStore = create<WorkoutState>()(
       deleteCustomExercise: (id) =>
         set((state) => ({
           customExercises: state.customExercises.filter((e) => e.id !== id),
+        })),
+      addCustomMuscleGroup: (muscleGroup) =>
+        set((state) => ({
+          customMuscleGroups: state.customMuscleGroups.includes(muscleGroup)
+            ? state.customMuscleGroups
+            : [...state.customMuscleGroups, muscleGroup],
+        })),
+      setExerciseMuscleGroup: (exerciseId, muscleGroup) =>
+        set((state) => ({
+          exerciseMuscleOverrides: {
+            ...state.exerciseMuscleOverrides,
+            [exerciseId]: muscleGroup,
+          },
         })),
     }),
     {
