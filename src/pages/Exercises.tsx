@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { PageHeader } from '@/components/PageHeader';
 import { ExerciseCard } from '@/components/ExerciseCard';
+import { CreateExerciseDialog } from '@/components/CreateExerciseDialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { exercises, categoryLabels } from '@/data/exercises';
+import { useWorkoutStore } from '@/store/workoutStore';
 import { Exercise } from '@/types/workout';
 import { Search } from 'lucide-react';
 
@@ -13,8 +15,11 @@ const categories = Object.keys(categoryLabels) as Exercise['category'][];
 const Exercises = () => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Exercise['category'] | null>(null);
+  const customExercises = useWorkoutStore((state) => state.customExercises);
 
-  const filteredExercises = exercises.filter((exercise) => {
+  const allExercises = [...exercises, ...customExercises];
+
+  const filteredExercises = allExercises.filter((exercise) => {
     const matchesSearch = exercise.name.toLowerCase().includes(search.toLowerCase()) ||
       exercise.muscleGroup.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = !selectedCategory || exercise.category === selectedCategory;
@@ -27,6 +32,7 @@ const Exercises = () => {
         <PageHeader 
           title="Exercise Library" 
           subtitle="Browse all available exercises"
+          action={<CreateExerciseDialog />}
         />
 
         <div className="space-y-4">
