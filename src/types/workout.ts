@@ -7,11 +7,14 @@ export interface Exercise {
   isCustom?: boolean;
 }
 
+export interface WorkoutSet {
+  weight: number;
+  reps?: number; // Empty during creation, filled during workout
+}
+
 export interface WorkoutExercise {
   exerciseId: string;
-  sets: number;
-  reps: number;
-  weight?: number;
+  sets: WorkoutSet[];
 }
 
 export interface Workout {
