@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Minus } from 'lucide-react';
+import { Plus, X, Minus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,9 +22,18 @@ export function CreateWorkoutDialog() {
   const [name, setName] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [step, setStep] = useState<'name' | 'exercises' | 'configure'>('name');
+  const [exerciseSearch, setExerciseSearch] = useState('');
   
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
+  const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
+
+  const allExercises = [...exercises, ...customExercises];
+  
+  const filteredExercises = allExercises.filter((exercise) =>
+    exercise.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
+    exercise.muscleGroup.toLowerCase().includes(exerciseSearch.toLowerCase())
+  );
 
   const toggleExercise = (exerciseId: string) => {
     setSelectedExercises((prev) => {
@@ -70,6 +79,7 @@ export function CreateWorkoutDialog() {
     setName('');
     setSelectedExercises([]);
     setStep('name');
+    setExerciseSearch('');
     setOpen(false);
   };
 
@@ -117,19 +127,36 @@ export function CreateWorkoutDialog() {
 
         {step === 'exercises' && (
           <div className="flex flex-col flex-1 min-h-0">
-            <p className="text-sm text-muted-foreground mb-3">
-              {selectedExercises.length} exercises selected
-            </p>
-            <ScrollArea className="flex-1 -mx-6 px-6">
+            <div className="space-y-3 mb-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search exercises..."
+                  value={exerciseSearch}
+                  onChange={(e) => setExerciseSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {selectedExercises.length} exercises selected
+              </p>
+            </div>
+            <ScrollArea className="flex-1 h-[300px] -mx-6 px-6">
               <div className="space-y-2 pb-4">
-                {exercises.map((exercise) => (
+                {filteredExercises.map((exercise) => (
                   <ExerciseCard
                     key={exercise.id}
                     exercise={exercise}
                     selected={selectedExercises.some((e) => e.exerciseId === exercise.id)}
                     onClick={() => toggleExercise(exercise.id)}
+                    showEdit={false}
                   />
                 ))}
+                {filteredExercises.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    No exercises found
+                  </p>
+                )}
               </div>
             </ScrollArea>
             <div className="flex gap-2 pt-4 border-t">
@@ -149,10 +176,10 @@ export function CreateWorkoutDialog() {
 
         {step === 'configure' && (
           <div className="flex flex-col flex-1 min-h-0">
-            <ScrollArea className="flex-1 -mx-6 px-6">
+            <ScrollArea className="flex-1 h-[300px] -mx-6 px-6">
               <div className="space-y-4 pb-4">
                 {selectedExercises.map((we) => {
-                  const exercise = exercises.find((e) => e.id === we.exerciseId);
+                  const exercise = allExercises.find((e) => e.id === we.exerciseId);
                   if (!exercise) return null;
                   return (
                     <div key={we.exerciseId} className="bg-secondary/50 rounded-lg p-4">
