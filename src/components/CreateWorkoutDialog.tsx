@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Minus, Search } from 'lucide-react';
+import { Plus, X, Minus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { exercises } from '@/data/exercises';
 import { useWorkoutStore } from '@/store/workoutStore';
-import { WorkoutExercise } from '@/types/workout';
+import { WorkoutExercise, WorkoutSet } from '@/types/workout';
 import { useToast } from '@/hooks/use-toast';
 import { ExerciseCard } from './ExerciseCard';
 
@@ -41,14 +41,42 @@ export function CreateWorkoutDialog() {
       if (exists) {
         return prev.filter((e) => e.exerciseId !== exerciseId);
       }
-      return [...prev, { exerciseId, sets: 3, reps: 10 }];
+      // Start with one set, weight 0, no reps (reps logged during workout)
+      return [...prev, { exerciseId, sets: [{ weight: 0 }] }];
     });
   };
 
-  const updateExercise = (exerciseId: string, field: 'sets' | 'reps', value: number) => {
+  const addSet = (exerciseId: string) => {
     setSelectedExercises((prev) =>
       prev.map((e) =>
-        e.exerciseId === exerciseId ? { ...e, [field]: Math.max(1, value) } : e
+        e.exerciseId === exerciseId
+          ? { ...e, sets: [...e.sets, { weight: 0 }] }
+          : e
+      )
+    );
+  };
+
+  const removeSet = (exerciseId: string, setIndex: number) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) =>
+        e.exerciseId === exerciseId
+          ? { ...e, sets: e.sets.filter((_, i) => i !== setIndex) }
+          : e
+      ).filter((e) => e.sets.length > 0)
+    );
+  };
+
+  const updateSetWeight = (exerciseId: string, setIndex: number, weight: number) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) =>
+        e.exerciseId === exerciseId
+          ? {
+              ...e,
+              sets: e.sets.map((s, i) =>
+                i === setIndex ? { ...s, weight: Math.max(0, weight) } : s
+              ),
+            }
+          : e
       )
     );
   };
@@ -99,7 +127,7 @@ export function CreateWorkoutDialog() {
           <DialogTitle>
             {step === 'name' && 'Name Your Workout'}
             {step === 'exercises' && 'Select Exercises'}
-            {step === 'configure' && 'Configure Sets & Reps'}
+            {step === 'configure' && 'Configure Sets & Weights'}
           </DialogTitle>
         </DialogHeader>
 
@@ -176,6 +204,9 @@ export function CreateWorkoutDialog() {
 
         {step === 'configure' && (
           <div className="flex flex-col flex-1 min-h-0">
+            <p className="text-sm text-muted-foreground mb-3">
+              Set the weight for each set. Reps will be logged during your workout.
+            </p>
             <ScrollArea className="flex-1 h-[300px] -mx-6 px-6">
               <div className="space-y-4 pb-4">
                 {selectedExercises.map((we) => {
@@ -194,51 +225,65 @@ export function CreateWorkoutDialog() {
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">Sets</Label>
-                          <div className="flex items-center gap-2 mt-1">
+                      
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-[auto_1fr_auto] gap-2 text-xs text-muted-foreground px-2">
+                          <span>Set</span>
+                          <span>Weight (kg)</span>
+                          <span></span>
+                        </div>
+                        
+                        {we.sets.map((set, setIndex) => (
+                          <div
+                            key={setIndex}
+                            className="grid grid-cols-[auto_1fr_auto] gap-2 items-center p-2 bg-background/50 rounded-lg"
+                          >
+                            <span className="w-6 text-center text-sm font-medium">{setIndex + 1}</span>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateSetWeight(we.exerciseId, setIndex, set.weight - 2.5)}
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <Input
+                                type="number"
+                                value={set.weight}
+                                onChange={(e) => updateSetWeight(we.exerciseId, setIndex, Number(e.target.value))}
+                                className="h-8 text-center"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => updateSetWeight(we.exerciseId, setIndex, set.weight + 2.5)}
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateExercise(we.exerciseId, 'sets', we.sets - 1)}
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => removeSet(we.exerciseId, setIndex)}
+                              disabled={we.sets.length === 1}
                             >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            <span className="w-8 text-center font-medium">{we.sets}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateExercise(we.exerciseId, 'sets', we.sets + 1)}
-                            >
-                              <Plus className="w-3 h-3" />
+                              <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
-                        </div>
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">Reps</Label>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateExercise(we.exerciseId, 'reps', we.reps - 1)}
-                            >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            <span className="w-8 text-center font-medium">{we.reps}</span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateExercise(we.exerciseId, 'reps', we.reps + 1)}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
+                        ))}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={() => addSet(we.exerciseId)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Set
+                        </Button>
                       </div>
                     </div>
                   );

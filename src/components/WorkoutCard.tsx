@@ -13,10 +13,13 @@ interface WorkoutCardProps {
 
 export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
   const deleteWorkout = useWorkoutStore((state) => state.deleteWorkout);
+  const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
 
+  const allExercises = [...exercises, ...customExercises];
+
   const exerciseNames = workout.exercises
-    .map((we) => exercises.find((e) => e.id === we.exerciseId)?.name)
+    .map((we) => allExercises.find((e) => e.id === we.exerciseId)?.name)
     .filter(Boolean)
     .slice(0, 3);
 
