@@ -7,7 +7,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Workout, WorkoutExercise, WorkoutSet } from '@/types/workout';
 import { exercises } from '@/data/exercises';
@@ -228,8 +227,8 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
             )}
           </SheetHeader>
 
-          <ScrollArea className="flex-1 -mx-6 px-6">
-            <div className="space-y-6 py-4">
+           <div className="flex-1 overflow-y-auto -mx-6 px-6">
+             <div className="space-y-6 py-4">
               {workoutExercises.map((we) => {
                 const exercise = allExercises.find((e) => e.id === we.exerciseId);
                 if (!exercise) return null;
@@ -370,7 +369,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
                 </Button>
               )}
             </div>
-          </ScrollArea>
+           </div>
 
           <div className="pt-4 border-t">
             <Button onClick={finishWorkout} className="w-full" size="lg">
@@ -395,7 +394,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
               className="pl-10"
             />
           </div>
-          <ScrollArea className="flex-1 h-[300px] -mx-6 px-6">
+          <div className="flex-1 h-[300px] overflow-y-auto -mx-6 px-6">
             <div className="space-y-2 pb-4">
               {filteredExercises.map((exercise) => (
                 <ExerciseCard
@@ -412,7 +411,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
                 </p>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
     </>
