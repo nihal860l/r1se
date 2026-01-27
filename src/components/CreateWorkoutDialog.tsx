@@ -169,7 +169,7 @@ export function CreateWorkoutDialog() {
                 {selectedExercises.length} exercises selected
               </p>
             </div>
-            <ScrollArea className="flex-1 h-[300px] -mx-6 px-6">
+            <div className="flex-1 h-[300px] overflow-y-auto -mx-6 px-6">
               <div className="space-y-2 pb-4">
                 {filteredExercises.map((exercise) => (
                   <ExerciseCard
@@ -186,7 +186,7 @@ export function CreateWorkoutDialog() {
                   </p>
                 )}
               </div>
-            </ScrollArea>
+            </div>
             <div className="flex gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setStep('name')} className="flex-1">
                 Back
