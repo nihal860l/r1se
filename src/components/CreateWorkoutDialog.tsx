@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { exercises } from '@/data/exercises';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { WorkoutExercise, WorkoutSet } from '@/types/workout';
@@ -207,7 +206,7 @@ export function CreateWorkoutDialog() {
             <p className="text-sm text-muted-foreground mb-3">
               Set the weight for each set. Reps will be logged during your workout.
             </p>
-            <ScrollArea className="flex-1 h-[300px] -mx-6 px-6">
+            <div className="flex-1 h-[300px] overflow-y-auto -mx-6 px-6">
               <div className="space-y-4 pb-4">
                 {selectedExercises.map((we) => {
                   const exercise = allExercises.find((e) => e.id === we.exerciseId);
@@ -289,7 +288,7 @@ export function CreateWorkoutDialog() {
                   );
                 })}
               </div>
-            </ScrollArea>
+            </div>
             <div className="flex gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setStep('exercises')} className="flex-1">
                 Back
