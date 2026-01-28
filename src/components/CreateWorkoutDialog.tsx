@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, X, Minus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import { useWorkoutStore } from '@/store/workoutStore';
 import { WorkoutExercise, WorkoutSet } from '@/types/workout';
 import { useToast } from '@/hooks/use-toast';
 import { ExerciseCard } from './ExerciseCard';
+import { useHeaderContext } from './Layout';
 
 export function CreateWorkoutDialog() {
   const [open, setOpen] = useState(false);
@@ -26,6 +27,11 @@ export function CreateWorkoutDialog() {
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
+  const { setIsOverlayOpen } = useHeaderContext();
+
+  useEffect(() => {
+    setIsOverlayOpen(open);
+  }, [open, setIsOverlayOpen]);
 
   const allExercises = [...exercises, ...customExercises];
   

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import { Exercise } from '@/types/workout';
 import { exercises as builtInExercises } from '@/data/exercises';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useHeaderContext } from './Layout';
 
 interface EditExerciseDialogProps {
   exercise: Exercise;
@@ -29,6 +30,7 @@ interface EditExerciseDialogProps {
 
 export function EditExerciseDialog({ exercise, open, onOpenChange }: EditExerciseDialogProps) {
   const { customMuscleGroups, exerciseMuscleOverrides, addCustomMuscleGroup, setExerciseMuscleGroup } = useWorkoutStore();
+  const { setIsOverlayOpen } = useHeaderContext();
   
   // Get unique muscle groups from built-in exercises
   const builtInMuscleGroups = [...new Set(builtInExercises.map(e => e.muscleGroup))];
@@ -38,6 +40,10 @@ export function EditExerciseDialog({ exercise, open, onOpenChange }: EditExercis
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState(currentMuscleGroup);
   const [newMuscleGroup, setNewMuscleGroup] = useState('');
   const [showAddNew, setShowAddNew] = useState(false);
+
+  useEffect(() => {
+    setIsOverlayOpen(open);
+  }, [open, setIsOverlayOpen]);
 
   const handleSave = () => {
     setExerciseMuscleGroup(exercise.id, selectedMuscleGroup);

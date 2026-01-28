@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { PageHeader } from '@/components/PageHeader';
 import { ExerciseCard } from '@/components/ExerciseCard';
 import { CreateExerciseDialog } from '@/components/CreateExerciseDialog';
 import { Input } from '@/components/ui/input';
@@ -28,12 +27,16 @@ const Exercises = () => {
 
   return (
     <Layout>
-      <div className="container max-w-lg animate-fade-in">
-        <PageHeader 
-          title="Exercise Library" 
-          subtitle="Browse all available exercises"
-          action={<CreateExerciseDialog />}
-        />
+      <div className="container max-w-lg animate-fade-in px-4">
+        <div className="pt-4 pb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-semibold">Exercise Library</h2>
+            <p className="text-sm text-muted-foreground">Browse all available exercises</p>
+          </div>
+          <div className="shrink-0 pt-1">
+            <CreateExerciseDialog />
+          </div>
+        </div>
 
         <div className="space-y-4">
           {/* Search */}

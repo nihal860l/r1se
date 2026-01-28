@@ -1,5 +1,4 @@
 import { Layout } from '@/components/Layout';
-import { PageHeader } from '@/components/PageHeader';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,11 +10,11 @@ const History = () => {
 
   return (
     <Layout>
-      <div className="container max-w-lg animate-fade-in">
-        <PageHeader 
-          title="History" 
-          subtitle="Your completed workouts"
-        />
+      <div className="container max-w-lg animate-fade-in px-4">
+        <div className="pt-4 pb-4">
+          <h2 className="text-xl font-semibold">History</h2>
+          <p className="text-sm text-muted-foreground">Your completed workouts</p>
+        </div>
 
         <div className="space-y-3">
           {workoutLogs.length === 0 ? (
