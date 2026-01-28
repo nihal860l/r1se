@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ExerciseCard } from './ExerciseCard';
+import { useHeaderContext } from './Layout';
 
 interface ActiveWorkoutSheetProps {
   workout: Workout | null;
@@ -44,6 +45,11 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
   const addWorkoutLog = useWorkoutStore((state) => state.addWorkoutLog);
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
+  const { setIsOverlayOpen } = useHeaderContext();
+
+  useEffect(() => {
+    setIsOverlayOpen(open);
+  }, [open, setIsOverlayOpen]);
 
   const allExercises = [...exercises, ...customExercises];
 

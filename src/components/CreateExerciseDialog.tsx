@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import { Exercise } from '@/types/workout';
 import { categoryLabels } from '@/data/exercises';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useHeaderContext } from './Layout';
 
 const categories = Object.keys(categoryLabels) as Exercise['category'][];
 
@@ -33,6 +34,11 @@ export function CreateExerciseDialog() {
   const [description, setDescription] = useState('');
 
   const addCustomExercise = useWorkoutStore((state) => state.addCustomExercise);
+  const { setIsOverlayOpen } = useHeaderContext();
+
+  useEffect(() => {
+    setIsOverlayOpen(open);
+  }, [open, setIsOverlayOpen]);
 
   const handleSubmit = () => {
     if (!name.trim()) {
