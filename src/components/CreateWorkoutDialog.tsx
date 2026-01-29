@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, Minus, Search, Trash2 } from 'lucide-react';
+import { Plus, X, Minus, Search, Trash2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,10 +12,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { exercises } from '@/data/exercises';
 import { useWorkoutStore } from '@/store/workoutStore';
-import { WorkoutExercise, WorkoutSet } from '@/types/workout';
+import { 
+  WorkoutExercise, 
+  SetType, 
+  IntensityLevel,
+  SET_TYPE_LABELS,
+  INTENSITY_LABELS,
+} from '@/types/workout';
 import { useToast } from '@/hooks/use-toast';
 import { ExerciseCard } from './ExerciseCard';
 import { useHeaderContext } from './Layout';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 export function CreateWorkoutDialog() {
   const [open, setOpen] = useState(false);
@@ -28,6 +39,10 @@ export function CreateWorkoutDialog() {
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
   const { setIsOverlayOpen } = useHeaderContext();
+
+  // Set type and intensity options
+  const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'dropset', 'alternating'];
+  const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
 
   useEffect(() => {
     setIsOverlayOpen(open);
@@ -46,18 +61,28 @@ export function CreateWorkoutDialog() {
       if (exists) {
         return prev.filter((e) => e.exerciseId !== exerciseId);
       }
-      // Start with one set, weight 0, no reps (reps logged during workout)
-      return [...prev, { exerciseId, sets: [{ weight: 0 }] }];
+      // Start with one set: weight 0, default setType and intensity
+      return [...prev, { 
+        exerciseId, 
+        sets: [{ weight: 0, setType: 'normal' as SetType, intensity: '2rir' as IntensityLevel }] 
+      }];
     });
   };
 
   const addSet = (exerciseId: string) => {
     setSelectedExercises((prev) =>
-      prev.map((e) =>
-        e.exerciseId === exerciseId
-          ? { ...e, sets: [...e.sets, { weight: 0 }] }
-          : e
-      )
+      prev.map((e) => {
+        if (e.exerciseId !== exerciseId) return e;
+        const lastSet = e.sets[e.sets.length - 1];
+        return { 
+          ...e, 
+          sets: [...e.sets, { 
+            weight: lastSet?.weight || 0, 
+            setType: lastSet?.setType || 'normal' as SetType,
+            intensity: lastSet?.intensity || '2rir' as IntensityLevel,
+          }] 
+        };
+      })
     );
   };
 
@@ -79,6 +104,36 @@ export function CreateWorkoutDialog() {
               ...e,
               sets: e.sets.map((s, i) =>
                 i === setIndex ? { ...s, weight: Math.max(0, weight) } : s
+              ),
+            }
+          : e
+      )
+    );
+  };
+
+  const updateSetType = (exerciseId: string, setIndex: number, setType: SetType) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) =>
+        e.exerciseId === exerciseId
+          ? {
+              ...e,
+              sets: e.sets.map((s, i) =>
+                i === setIndex ? { ...s, setType } : s
+              ),
+            }
+          : e
+      )
+    );
+  };
+
+  const updateSetIntensity = (exerciseId: string, setIndex: number, intensity: IntensityLevel) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) =>
+        e.exerciseId === exerciseId
+          ? {
+              ...e,
+              sets: e.sets.map((s, i) =>
+                i === setIndex ? { ...s, intensity } : s
               ),
             }
           : e
@@ -210,7 +265,7 @@ export function CreateWorkoutDialog() {
         {step === 'configure' && (
           <div className="flex flex-col flex-1 min-h-0">
             <p className="text-sm text-muted-foreground mb-3">
-              Set the weight for each set. Reps will be logged during your workout.
+              Configure weight, set type, and intensity target for each set. Reps will be logged during your workout.
             </p>
             <div className="flex-1 h-[300px] overflow-y-auto -mx-6 px-6">
               <div className="space-y-4 pb-4">
@@ -232,23 +287,29 @@ export function CreateWorkoutDialog() {
                       </div>
                       
                       <div className="space-y-2">
-                        <div className="grid grid-cols-[auto_1fr_auto] gap-2 text-xs text-muted-foreground px-2">
-                          <span>Set</span>
+                        {/* Header row */}
+                        <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-1 text-xs text-muted-foreground px-1">
+                          <span className="w-8 text-center">Set</span>
                           <span>Weight (kg)</span>
-                          <span></span>
+                          <span className="w-16 text-center">Type</span>
+                          <span className="w-16 text-center">Intensity</span>
+                          <span className="w-7"></span>
                         </div>
                         
                         {we.sets.map((set, setIndex) => (
                           <div
                             key={setIndex}
-                            className="grid grid-cols-[auto_1fr_auto] gap-2 items-center p-2 bg-background/50 rounded-lg"
+                            className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-1 items-center p-2 bg-background/50 rounded-lg"
                           >
-                            <span className="w-6 text-center text-sm font-medium">{setIndex + 1}</span>
-                            <div className="flex items-center gap-1">
+                            {/* Set number */}
+                            <span className="w-8 text-center text-sm font-medium">{setIndex + 1}</span>
+                            
+                            {/* Weight */}
+                            <div className="flex items-center gap-0.5">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-7 w-7 shrink-0"
                                 onClick={() => updateSetWeight(we.exerciseId, setIndex, set.weight - 2.5)}
                               >
                                 <Minus className="w-3 h-3" />
@@ -257,17 +318,77 @@ export function CreateWorkoutDialog() {
                                 type="number"
                                 value={set.weight}
                                 onChange={(e) => updateSetWeight(we.exerciseId, setIndex, Number(e.target.value))}
-                                className="h-8 text-center"
+                                className="h-8 text-center min-w-0"
                               />
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-7 w-7 shrink-0"
                                 onClick={() => updateSetWeight(we.exerciseId, setIndex, set.weight + 2.5)}
                               >
                                 <Plus className="w-3 h-3" />
                               </Button>
                             </div>
+                            
+                            {/* Set Type */}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-16 h-8 text-xs px-1"
+                                >
+                                  <span className="truncate">
+                                    {set.setType ? SET_TYPE_LABELS[set.setType].split(' ')[0] : 'Normal'}
+                                  </span>
+                                  <ChevronDown className="w-3 h-3 ml-0.5 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-48 p-1" align="start">
+                                {SET_TYPE_OPTIONS.map((type) => (
+                                  <Button
+                                    key={type}
+                                    variant={set.setType === type ? 'secondary' : 'ghost'}
+                                    size="sm"
+                                    className="w-full justify-start text-sm"
+                                    onClick={() => updateSetType(we.exerciseId, setIndex, type)}
+                                  >
+                                    {SET_TYPE_LABELS[type]}
+                                  </Button>
+                                ))}
+                              </PopoverContent>
+                            </Popover>
+                            
+                            {/* Intensity */}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-16 h-8 text-xs px-1"
+                                >
+                                  <span className="truncate">
+                                    {set.intensity ? INTENSITY_LABELS[set.intensity] : '2 RIR'}
+                                  </span>
+                                  <ChevronDown className="w-3 h-3 ml-0.5 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-40 p-1" align="start">
+                                {INTENSITY_OPTIONS.map((intensity) => (
+                                  <Button
+                                    key={intensity}
+                                    variant={set.intensity === intensity ? 'secondary' : 'ghost'}
+                                    size="sm"
+                                    className="w-full justify-start text-sm"
+                                    onClick={() => updateSetIntensity(we.exerciseId, setIndex, intensity)}
+                                  >
+                                    {INTENSITY_LABELS[intensity]}
+                                  </Button>
+                                ))}
+                              </PopoverContent>
+                            </Popover>
+                            
+                            {/* Delete */}
                             <Button
                               variant="ghost"
                               size="icon"
