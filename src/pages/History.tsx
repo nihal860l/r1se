@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Dumbbell } from 'lucide-react';
 import { format } from 'date-fns';
+import { INTENSITY_LABELS, SET_TYPE_LABELS } from '@/types/workout';
 
 const History = () => {
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
@@ -43,19 +44,35 @@ const History = () => {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {log.exercises.map((exercise, i) => (
-                      <div 
-                        key={i} 
-                        className="flex items-center justify-between py-2 border-b border-border last:border-0"
-                      >
+                      <div key={i} className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Dumbbell className="w-4 h-4 text-primary" />
                           <span className="text-sm font-medium">{exercise.exerciseName}</span>
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          {exercise.sets.length} sets
-                        </span>
+                        <div className="pl-6 space-y-1">
+                          {exercise.sets.map((set, j) => (
+                            <div 
+                              key={j} 
+                              className="flex items-center gap-2 text-xs text-muted-foreground"
+                            >
+                              <span className="w-12">Set {j + 1}</span>
+                              <span className="w-16">{set.weight}kg</span>
+                              <span className="w-12">{set.reps} reps</span>
+                              {set.intensity && (
+                                <Badge variant="outline" className="text-xs h-5">
+                                  {INTENSITY_LABELS[set.intensity]}
+                                </Badge>
+                              )}
+                              {set.setType && set.setType !== 'normal' && (
+                                <Badge variant="secondary" className="text-xs h-5">
+                                  {SET_TYPE_LABELS[set.setType]}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
