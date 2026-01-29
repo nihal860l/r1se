@@ -15,6 +15,7 @@ export interface WorkoutSet {
   weight: number;
   reps?: number;
   setType?: SetType;
+  intensity?: IntensityLevel;
 }
 
 export interface WorkoutExercise {

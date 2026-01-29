@@ -49,8 +49,8 @@ interface SetLog {
   completed: boolean;
 }
 
-// Generate reps options 0-50
-const REPS_OPTIONS = Array.from({ length: 51 }, (_, i) => i);
+// Generate reps options 0-100 (no looping, hard cap at 100)
+const REPS_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
 
 // Intensity options
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
@@ -97,7 +97,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
         logs[we.exerciseId] = we.sets.map((set) => ({
           weight: set.weight,
           reps: null,
-          intensity: null,
+          intensity: set.intensity || null, // Load planned intensity
           setType: set.setType || 'normal',
           completed: false,
         }));
