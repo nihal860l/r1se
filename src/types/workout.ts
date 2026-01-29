@@ -7,9 +7,14 @@ export interface Exercise {
   isCustom?: boolean;
 }
 
+export type SetType = 'normal' | 'superset' | 'dropset' | 'alternating';
+
+export type IntensityLevel = 'warmup' | '2rir' | '1rir' | 'failure';
+
 export interface WorkoutSet {
   weight: number;
-  reps?: number; // Empty during creation, filled during workout
+  reps?: number;
+  setType?: SetType;
 }
 
 export interface WorkoutExercise {
@@ -24,15 +29,36 @@ export interface Workout {
   createdAt: Date;
 }
 
+export interface CompletedSet {
+  reps: number;
+  weight: number;
+  intensity?: IntensityLevel;
+  setType?: SetType;
+}
+
 export interface WorkoutLog {
   id: string;
   workoutId: string;
   workoutName: string;
   completedAt: Date;
-  duration: number; // in minutes
+  duration: number;
   exercises: {
     exerciseId: string;
     exerciseName: string;
-    sets: { reps: number; weight: number }[];
+    sets: CompletedSet[];
   }[];
 }
+
+export const SET_TYPE_LABELS: Record<SetType, string> = {
+  normal: 'Normal',
+  superset: 'Super Set',
+  dropset: 'Drop Set',
+  alternating: 'Alternating Super Set',
+};
+
+export const INTENSITY_LABELS: Record<IntensityLevel, string> = {
+  warmup: 'Warm-up',
+  '2rir': '2 RIR',
+  '1rir': '1 RIR',
+  failure: 'Failure',
+};
