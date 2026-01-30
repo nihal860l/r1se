@@ -7,7 +7,7 @@ export interface Exercise {
   isCustom?: boolean;
 }
 
-export type SetType = 'normal' | 'superset' | 'dropset' | 'alternating';
+export type SetType = 'normal' | 'superset' | 'alternating';
 
 export type IntensityLevel = 'warmup' | '2rir' | '1rir' | 'failure';
 
@@ -53,8 +53,13 @@ export interface WorkoutLog {
 export const SET_TYPE_LABELS: Record<SetType, string> = {
   normal: 'Normal',
   superset: 'Super Set',
-  dropset: 'Drop Set',
-  alternating: 'Alternating Super Set',
+  alternating: 'Alt Super Set',
+};
+
+export const SET_TYPE_SHORT_LABELS: Record<SetType, string> = {
+  normal: 'Normal',
+  superset: 'Super',
+  alternating: 'Alt SS',
 };
 
 export const INTENSITY_LABELS: Record<IntensityLevel, string> = {

@@ -1,21 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Check, X, Plus, Minus, Pencil, Trash2, Search, ChevronDown } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Check, Plus, Minus, Pencil, Trash2, Search, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { 
-  Workout, 
-  WorkoutExercise, 
   IntensityLevel, 
   SetType,
   SET_TYPE_LABELS,
+  SET_TYPE_SHORT_LABELS,
   INTENSITY_LABELS,
   CompletedSet,
+  WorkoutExercise,
 } from '@/types/workout';
 import { exercises } from '@/data/exercises';
 import { useWorkoutStore } from '@/store/workoutStore';
@@ -26,20 +21,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ExerciseCard } from './ExerciseCard';
-import { useHeaderContext } from './Layout';
-import { PickerDialog } from './PickerDialog';
+import { ExerciseCard } from '@/components/ExerciseCard';
+import { Layout } from '@/components/Layout';
+import { PickerDialog } from '@/components/PickerDialog';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-
-interface ActiveWorkoutSheetProps {
-  workout: Workout | null;
-  open: boolean;
-  onClose: () => void;
-}
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface SetLog {
   weight: number;
@@ -49,16 +43,25 @@ interface SetLog {
   completed: boolean;
 }
 
-// Generate reps options 0-100 (no looping, hard cap at 100)
+// Generate reps options 0-100 (no looping)
 const REPS_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
 
-// Intensity options
+// Intensity and set type options (no dropset)
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
-
-// Set type options
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
 
-export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutSheetProps) {
+export default function ActiveWorkout() {
+  const navigate = useNavigate();
+  const { workoutId } = useParams<{ workoutId: string }>();
+  
+  const workouts = useWorkoutStore((state) => state.workouts);
+  const addWorkoutLog = useWorkoutStore((state) => state.addWorkoutLog);
+  const customExercises = useWorkoutStore((state) => state.customExercises);
+  const { toast } = useToast();
+
+  const workout = workouts.find((w) => w.id === workoutId);
+  const allExercises = [...exercises, ...customExercises];
+
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, SetLog[]>>({});
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -66,29 +69,21 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
   // Picker state
   const [repsPicker, setRepsPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
-  
-  const addWorkoutLog = useWorkoutStore((state) => state.addWorkoutLog);
-  const customExercises = useWorkoutStore((state) => state.customExercises);
-  const { toast } = useToast();
-  const { setIsOverlayOpen } = useHeaderContext();
-
-  useEffect(() => {
-    setIsOverlayOpen(open);
-  }, [open, setIsOverlayOpen]);
-
-  const allExercises = [...exercises, ...customExercises];
+  const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
 
   const filteredExercises = allExercises.filter((exercise) =>
     exercise.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
     exercise.muscleGroup.toLowerCase().includes(exerciseSearch.toLowerCase())
   );
 
+  // Initialize workout
   useEffect(() => {
-    if (open && workout) {
+    if (workout) {
       setStartTime(new Date());
       setWorkoutExercises([...workout.exercises]);
       
@@ -97,7 +92,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
         logs[we.exerciseId] = we.sets.map((set) => ({
           weight: set.weight,
           reps: null,
-          intensity: set.intensity || null, // Load planned intensity
+          intensity: set.intensity || null,
           setType: set.setType || 'normal',
           completed: false,
         }));
@@ -105,15 +100,16 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
       setExerciseLogs(logs);
       setIsEditMode(false);
     }
-  }, [open, workout]);
+  }, [workout]);
 
+  // Timer
   useEffect(() => {
-    if (!open || !startTime) return;
+    if (!startTime) return;
     const interval = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000));
     }, 1000);
     return () => clearInterval(interval);
-  }, [open, startTime]);
+  }, [startTime]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -148,13 +144,13 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
 
     const newExercise: WorkoutExercise = {
       exerciseId,
-      sets: [{ weight: 0 }],
+      sets: [{ weight: 0, setType: 'normal', intensity: '2rir' }],
     };
     
     setWorkoutExercises((prev) => [...prev, newExercise]);
     setExerciseLogs((prev) => ({
       ...prev,
-      [exerciseId]: [{ weight: 0, reps: null, intensity: null, setType: 'normal', completed: false }],
+      [exerciseId]: [{ weight: 0, reps: null, intensity: '2rir', setType: 'normal', completed: false }],
     }));
     setShowAddExercise(false);
     setExerciseSearch('');
@@ -173,11 +169,12 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
     const lastSet = exerciseLogs[exerciseId]?.[exerciseLogs[exerciseId].length - 1];
     const newWeight = lastSet?.weight || 0;
     const newSetType = lastSet?.setType || 'normal';
+    const newIntensity = lastSet?.intensity || '2rir';
 
     setWorkoutExercises((prev) =>
       prev.map((e) =>
         e.exerciseId === exerciseId
-          ? { ...e, sets: [...e.sets, { weight: newWeight, setType: newSetType }] }
+          ? { ...e, sets: [...e.sets, { weight: newWeight, setType: newSetType, intensity: newIntensity as IntensityLevel }] }
           : e
       )
     );
@@ -186,7 +183,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
       [exerciseId]: [...prev[exerciseId], { 
         weight: newWeight, 
         reps: null, 
-        intensity: null, 
+        intensity: newIntensity, 
         setType: newSetType, 
         completed: false 
       }],
@@ -242,7 +239,16 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
       description: `${workout.name} logged in ${formatTime(elapsed)}.`,
     });
 
-    onClose();
+    navigate('/');
+  };
+
+  const handleCancel = () => {
+    setShowCancelConfirm(true);
+  };
+
+  const confirmCancel = () => {
+    setShowCancelConfirm(false);
+    navigate('/');
   };
 
   // Get current picker values
@@ -254,115 +260,120 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
     ? exerciseLogs[intensityPicker.exerciseId]?.[intensityPicker.setIndex]?.intensity ?? 'warmup'
     : 'warmup';
 
-  if (!workout) return null;
+  const currentSetTypeValue = setTypePicker
+    ? exerciseLogs[setTypePicker.exerciseId]?.[setTypePicker.setIndex]?.setType ?? 'normal'
+    : 'normal';
+
+  if (!workout) {
+    return (
+      <Layout hideNav>
+        <div className="container max-w-lg px-4 py-8 text-center">
+          <p className="text-muted-foreground">Workout not found</p>
+          <Button onClick={() => navigate('/')} className="mt-4">
+            Go Back
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
-    <>
-      <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-        <SheetContent side="bottom" className="h-[90vh] flex flex-col">
-          <SheetHeader className="border-b pb-4">
-            <div className="flex items-center justify-between">
-              <SheetTitle>{workout.name}</SheetTitle>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-mono text-primary">{formatTime(elapsed)}</span>
-                <Button
-                  variant={isEditMode ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setIsEditMode(!isEditMode)}
-                >
-                  <Pencil className="w-4 h-4 mr-1" />
-                  {isEditMode ? 'Done' : 'Edit'}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
+    <Layout hideNav>
+      <div className="container max-w-lg animate-fade-in px-4 flex flex-col min-h-[calc(100vh-60px)]">
+        {/* Header */}
+        <div className="pt-4 pb-4 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">{workout.name}</h2>
+              <p className="text-sm text-muted-foreground">Active workout session</p>
             </div>
-            {isEditMode && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Edit mode: Add/remove exercises and sets, modify weights
-              </p>
-            )}
-          </SheetHeader>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-mono text-primary">{formatTime(elapsed)}</span>
+              <Button
+                variant={isEditMode ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setIsEditMode(!isEditMode)}
+              >
+                <Pencil className="w-4 h-4 mr-1" />
+                {isEditMode ? 'Done' : 'Edit'}
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleCancel}>
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+          {isEditMode && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Edit mode: Add/remove exercises and sets, modify weights
+            </p>
+          )}
+        </div>
 
-          <div className="flex-1 overflow-y-auto -mx-6 px-6">
-            <div className="space-y-6 py-4">
-              {workoutExercises.map((we) => {
-                const exercise = allExercises.find((e) => e.id === we.exerciseId);
-                if (!exercise) return null;
-                const sets = exerciseLogs[we.exerciseId] || [];
+        {/* Exercise List */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-6 py-4">
+            {workoutExercises.map((we) => {
+              const exercise = allExercises.find((e) => e.id === we.exerciseId);
+              if (!exercise) return null;
+              const sets = exerciseLogs[we.exerciseId] || [];
 
-                return (
-                  <div key={we.exerciseId} className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{exercise.name}</h3>
-                      {isEditMode && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => removeExercise(we.exerciseId)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
+              return (
+                <div key={we.exerciseId} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{exercise.name}</h3>
+                    {isEditMode && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeExercise(we.exerciseId)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {/* Header row */}
+                    <div className="grid grid-cols-[48px_1fr_56px_64px_40px] gap-1 text-xs text-muted-foreground px-1">
+                      <span className="text-center">Set</span>
+                      <span>Weight</span>
+                      <span className="text-center">Reps</span>
+                      <span className="text-center">Intensity</span>
+                      <span></span>
                     </div>
-                    <div className="space-y-2">
-                      {/* Header row */}
-                      <div className="grid grid-cols-[auto_1fr_auto_auto_auto] gap-1 text-xs text-muted-foreground px-1">
-                        <span className="w-12 text-center">Set</span>
-                        <span>Weight</span>
-                        <span className="w-14 text-center">Reps</span>
-                        <span className="w-16 text-center">Intensity</span>
-                        <span className="w-8"></span>
-                      </div>
+                    
+                    {sets.map((set, i) => {
+                      const setType = set.setType || 'normal';
+                      const isNormal = setType === 'normal';
                       
-                      {sets.map((set, i) => (
+                      return (
                         <div
                           key={i}
-                          className={`grid grid-cols-[auto_1fr_auto_auto_auto] gap-1 items-center p-2 rounded-lg transition-colors ${
+                          className={`grid grid-cols-[48px_1fr_56px_64px_40px] gap-1 items-center p-2 rounded-lg transition-colors ${
                             set.completed ? 'bg-primary/10' : 'bg-secondary/50'
                           }`}
                         >
-                          {/* Set number with type picker */}
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-12 h-8 px-1 text-xs font-medium"
-                              >
-                                {set.setType === 'normal' ? (
-                                  <span>{i + 1}</span>
-                                ) : (
-                                  <span className="truncate text-primary">
-                                    {SET_TYPE_LABELS[set.setType].split(' ')[0]}
-                                  </span>
-                                )}
-                                <ChevronDown className="w-3 h-3 ml-0.5 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-48 p-1 bg-popover border border-border" align="start">
-                              {SET_TYPE_OPTIONS.map((type) => (
-                                <Button
-                                  key={type}
-                                  variant={set.setType === type ? 'secondary' : 'ghost'}
-                                  size="sm"
-                                  className="w-full justify-start text-sm"
-                                  onClick={() => updateSetLog(we.exerciseId, i, 'setType', type)}
-                                >
-                                  {SET_TYPE_LABELS[type]}
-                                </Button>
-                              ))}
-                            </PopoverContent>
-                          </Popover>
+                          {/* Set column - integrated with type */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-9 px-1 text-xs font-medium ${!isNormal ? 'text-primary' : ''}`}
+                            onClick={() => setSetTypePicker({ exerciseId: we.exerciseId, setIndex: i })}
+                          >
+                            {isNormal ? (
+                              <span className="text-sm">{i + 1}</span>
+                            ) : (
+                              <span className="truncate">{SET_TYPE_SHORT_LABELS[setType]}</span>
+                            )}
+                            <ChevronDown className="w-3 h-3 ml-0.5 opacity-50 shrink-0" />
+                          </Button>
                           
                           {/* Weight */}
                           <div className="flex items-center gap-0.5">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 shrink-0"
+                              className="h-8 w-8 shrink-0"
                               onClick={() => updateSetLog(we.exerciseId, i, 'weight', Math.max(0, set.weight - 2.5))}
                             >
                               <Minus className="w-3 h-3" />
@@ -371,12 +382,12 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
                               type="number"
                               value={set.weight}
                               onChange={(e) => updateSetLog(we.exerciseId, i, 'weight', Number(e.target.value))}
-                              className="h-8 text-center min-w-0"
+                              className="h-9 text-center min-w-0"
                             />
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-7 w-7 shrink-0"
+                              className="h-8 w-8 shrink-0"
                               onClick={() => updateSetLog(we.exerciseId, i, 'weight', set.weight + 2.5)}
                             >
                               <Plus className="w-3 h-3" />
@@ -387,7 +398,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-14 h-8 text-sm"
+                            className="h-9 text-sm px-2"
                             onClick={() => setRepsPicker({ exerciseId: we.exerciseId, setIndex: i })}
                           >
                             {set.reps !== null ? set.reps : '—'}
@@ -397,73 +408,77 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
                           <Button
                             variant="outline"
                             size="sm"
-                            className="w-16 h-8 text-xs px-1"
+                            className="h-9 text-xs px-1"
                             onClick={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex: i })}
                           >
-                            {set.intensity ? INTENSITY_LABELS[set.intensity].split(' ')[0] : '—'}
+                            <span className="truncate">
+                              {set.intensity ? INTENSITY_LABELS[set.intensity] : '—'}
+                            </span>
                           </Button>
                           
                           {/* Actions */}
-                          <div className="flex items-center gap-0.5">
-                            {isEditMode && (
+                          <div className="flex items-center justify-end">
+                            {isEditMode ? (
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                className="h-9 w-9 text-muted-foreground hover:text-destructive"
                                 onClick={() => removeSetFromExercise(we.exerciseId, i)}
                                 disabled={sets.length === 1}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
+                            ) : (
+                              <Button
+                                variant={set.completed ? 'default' : 'outline'}
+                                size="icon"
+                                className="h-9 w-9"
+                                onClick={() => toggleSetComplete(we.exerciseId, i)}
+                              >
+                                <Check className="w-4 h-4" />
+                              </Button>
                             )}
-                            <Button
-                              variant={set.completed ? 'default' : 'outline'}
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => toggleSetComplete(we.exerciseId, i)}
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
                           </div>
                         </div>
-                      ))}
-                      
-                      {isEditMode && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full mt-2"
-                          onClick={() => addSetToExercise(we.exerciseId)}
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Add Set
-                        </Button>
-                      )}
-                    </div>
+                      );
+                    })}
+                    
+                    {isEditMode && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2"
+                        onClick={() => addSetToExercise(we.exerciseId)}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Add Set
+                      </Button>
+                    )}
                   </div>
-                );
-              })}
-              
-              {isEditMode && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShowAddExercise(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Exercise
-                </Button>
-              )}
-            </div>
+                </div>
+              );
+            })}
+            
+            {isEditMode && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowAddExercise(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Exercise
+              </Button>
+            )}
           </div>
+        </div>
 
-          <div className="pt-4 border-t">
-            <Button onClick={finishWorkout} className="w-full" size="lg">
-              Finish Workout
-            </Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+        {/* Footer */}
+        <div className="py-4 border-t">
+          <Button onClick={finishWorkout} className="w-full h-12 text-base">
+            Finish Workout
+          </Button>
+        </div>
+      </div>
 
       {/* Reps Picker Dialog */}
       <PickerDialog
@@ -492,6 +507,21 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
           }
         }}
         getLabel={(item) => INTENSITY_LABELS[item]}
+      />
+
+      {/* Set Type Picker Dialog */}
+      <PickerDialog
+        open={setTypePicker !== null}
+        onOpenChange={(open) => !open && setSetTypePicker(null)}
+        title="Select Set Type"
+        items={SET_TYPE_OPTIONS}
+        value={currentSetTypeValue}
+        onConfirm={(value) => {
+          if (setTypePicker) {
+            updateSetLog(setTypePicker.exerciseId, setTypePicker.setIndex, 'setType', value);
+          }
+        }}
+        getLabel={(item) => SET_TYPE_LABELS[item]}
       />
 
       {/* Add Exercise Dialog */}
@@ -529,6 +559,24 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
           </div>
         </DialogContent>
       </Dialog>
-    </>
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your progress will not be saved. Are you sure you want to cancel this workout?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continue Workout</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Cancel Workout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Layout>
   );
 }

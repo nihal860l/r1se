@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface WorkoutCardProps {
   workout: Workout;
-  onStart: (workout: Workout) => void;
+  onStart: () => void;
 }
 
 export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
@@ -58,7 +58,7 @@ export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
           </span>
           <Button
             size="sm"
-            onClick={() => onStart(workout)}
+            onClick={onStart}
             className="gap-2"
           >
             <Play className="w-4 h-4" />
