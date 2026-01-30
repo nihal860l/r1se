@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Exercises from "./pages/Exercises";
 import History from "./pages/History";
+import CreateWorkout from "./pages/CreateWorkout";
+import ActiveWorkout from "./pages/ActiveWorkout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +23,8 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/exercises" element={<Exercises />} />
             <Route path="/history" element={<History />} />
+            <Route path="/create-workout" element={<CreateWorkout />} />
+            <Route path="/workout/:workoutId" element={<ActiveWorkout />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

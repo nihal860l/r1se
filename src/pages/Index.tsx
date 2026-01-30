@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { WorkoutCard } from '@/components/WorkoutCard';
-import { CreateWorkoutDialog } from '@/components/CreateWorkoutDialog';
-import { ActiveWorkoutSheet } from '@/components/ActiveWorkoutSheet';
 import { useWorkoutStore } from '@/store/workoutStore';
-import { Workout } from '@/types/workout';
-import { Dumbbell } from 'lucide-react';
+import { Dumbbell, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const workouts = useWorkoutStore((state) => state.workouts);
-  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
+  const navigate = useNavigate();
+
+  const handleStartWorkout = (workoutId: string) => {
+    navigate(`/workout/${workoutId}`);
+  };
 
   return (
     <Layout>
@@ -20,7 +22,14 @@ const Index = () => {
         </div>
 
         <div className="space-y-4">
-          <CreateWorkoutDialog />
+          <Button 
+            size="lg" 
+            className="gap-2 w-full"
+            onClick={() => navigate('/create-workout')}
+          >
+            <Plus className="w-5 h-5" />
+            Create Workout
+          </Button>
 
           {workouts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -38,19 +47,13 @@ const Index = () => {
                 <WorkoutCard
                   key={workout.id}
                   workout={workout}
-                  onStart={setActiveWorkout}
+                  onStart={() => handleStartWorkout(workout.id)}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
-
-      <ActiveWorkoutSheet
-        workout={activeWorkout}
-        open={!!activeWorkout}
-        onClose={() => setActiveWorkout(null)}
-      />
     </Layout>
   );
 };

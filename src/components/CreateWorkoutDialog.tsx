@@ -41,7 +41,7 @@ export function CreateWorkoutDialog() {
   const { setIsOverlayOpen } = useHeaderContext();
 
   // Set type and intensity options
-  const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'dropset', 'alternating'];
+  const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
   const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
 
   useEffect(() => {

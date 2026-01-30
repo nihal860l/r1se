@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface LayoutProps {
   children: ReactNode;
+  hideNav?: boolean;
 }
 
 interface HeaderContextType {
@@ -25,7 +26,7 @@ const navItems = [
   { to: '/history', icon: History, label: 'History' },
 ];
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, hideNav = false }: LayoutProps) {
   const location = useLocation();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
@@ -51,35 +52,37 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </header>
 
-        <main className="pt-16 pb-24">
+        <main className={cn("pt-16", !hideNav && "pb-24")}>
           {children}
         </main>
         
         {/* Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40">
-          <div className="container max-w-lg mx-auto">
-            <div className="flex justify-around items-center py-2">
-              {navItems.map(({ to, icon: Icon, label }) => {
-                const isActive = location.pathname === to;
-                return (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    className={cn(
-                      'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
-                      isActive 
-                        ? 'text-primary' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    <Icon className={cn('w-5 h-5', isActive && 'glow')} />
-                    <span className="text-xs font-medium">{label}</span>
-                  </NavLink>
-                );
-              })}
+        {!hideNav && (
+          <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40">
+            <div className="container max-w-lg mx-auto">
+              <div className="flex justify-around items-center py-2">
+                {navItems.map(({ to, icon: Icon, label }) => {
+                  const isActive = location.pathname === to;
+                  return (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      className={cn(
+                        'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
+                        isActive 
+                          ? 'text-primary' 
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <Icon className={cn('w-5 h-5', isActive && 'glow')} />
+                      <span className="text-xs font-medium">{label}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        </nav>
+          </nav>
+        )}
       </div>
     </HeaderContext.Provider>
   );
