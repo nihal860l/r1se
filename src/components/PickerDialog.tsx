@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { WheelPicker } from './WheelPicker';
+import { OptimizedWheelPicker } from './OptimizedWheelPicker';
 
 interface PickerDialogProps<T> {
   open: boolean;
@@ -18,7 +18,7 @@ interface PickerDialogProps<T> {
   getLabel?: (item: T) => string;
 }
 
-export function PickerDialog<T>({
+function PickerDialogComponent<T>({
   open,
   onOpenChange,
   title,
@@ -42,12 +42,12 @@ export function PickerDialog<T>({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xs">
+      <DialogContent className="max-w-xs bg-popover text-popover-foreground">
         <DialogHeader>
-          <DialogTitle className="text-center">{title}</DialogTitle>
+          <DialogTitle className="text-center text-foreground">{title}</DialogTitle>
         </DialogHeader>
         <div className="py-2">
-          <WheelPicker
+          <OptimizedWheelPicker
             items={items}
             value={tempValue}
             onChange={setTempValue}
@@ -70,3 +70,5 @@ export function PickerDialog<T>({
     </Dialog>
   );
 }
+
+export const PickerDialog = memo(PickerDialogComponent) as typeof PickerDialogComponent;

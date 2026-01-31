@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Plus, Minus, Pencil, Trash2, Search, ChevronDown, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   IntensityLevel, 
   SetType,
   SET_TYPE_LABELS,
-  SET_TYPE_SHORT_LABELS,
   INTENSITY_LABELS,
   CompletedSet,
   WorkoutExercise,
@@ -24,6 +23,7 @@ import {
 import { ExerciseCard } from '@/components/ExerciseCard';
 import { Layout } from '@/components/Layout';
 import { PickerDialog } from '@/components/PickerDialog';
+import { SetRow } from '@/components/SetRow';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -335,113 +335,32 @@ export default function ActiveWorkout() {
                   <div className="space-y-2">
                     {/* Header row */}
                     <div className="grid grid-cols-[48px_1fr_56px_64px_40px] gap-1 text-xs text-muted-foreground px-1">
-                      <span className="text-center">Set</span>
-                      <span>Weight</span>
-                      <span className="text-center">Reps</span>
-                      <span className="text-center">Intensity</span>
+                      <span className="text-center text-muted-foreground">Set</span>
+                      <span className="text-muted-foreground">Weight</span>
+                      <span className="text-center text-muted-foreground">Reps</span>
+                      <span className="text-center text-muted-foreground">Intensity</span>
                       <span></span>
                     </div>
                     
-                    {sets.map((set, i) => {
-                      const setType = set.setType || 'normal';
-                      const isNormal = setType === 'normal';
-                      
-                      return (
-                        <div
-                          key={i}
-                          className={`grid grid-cols-[48px_1fr_56px_64px_40px] gap-1 items-center p-2 rounded-lg transition-colors ${
-                            set.completed ? 'bg-primary/10' : 'bg-secondary/50'
-                          }`}
-                        >
-                          {/* Set column - integrated with type */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-9 px-1 text-xs font-medium ${!isNormal ? 'text-primary' : ''}`}
-                            onClick={() => setSetTypePicker({ exerciseId: we.exerciseId, setIndex: i })}
-                          >
-                            {isNormal ? (
-                              <span className="text-sm">{i + 1}</span>
-                            ) : (
-                              <span className="truncate">{SET_TYPE_SHORT_LABELS[setType]}</span>
-                            )}
-                            <ChevronDown className="w-3 h-3 ml-0.5 opacity-50 shrink-0" />
-                          </Button>
-                          
-                          {/* Weight */}
-                          <div className="flex items-center gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 shrink-0"
-                              onClick={() => updateSetLog(we.exerciseId, i, 'weight', Math.max(0, set.weight - 2.5))}
-                            >
-                              <Minus className="w-3 h-3" />
-                            </Button>
-                            <Input
-                              type="number"
-                              value={set.weight}
-                              onChange={(e) => updateSetLog(we.exerciseId, i, 'weight', Number(e.target.value))}
-                              className="h-9 text-center min-w-0"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 shrink-0"
-                              onClick={() => updateSetLog(we.exerciseId, i, 'weight', set.weight + 2.5)}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          
-                          {/* Reps - tap to open picker */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-9 text-sm px-2"
-                            onClick={() => setRepsPicker({ exerciseId: we.exerciseId, setIndex: i })}
-                          >
-                            {set.reps !== null ? set.reps : '—'}
-                          </Button>
-                          
-                          {/* Intensity - tap to open picker */}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-9 text-xs px-1"
-                            onClick={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex: i })}
-                          >
-                            <span className="truncate">
-                              {set.intensity ? INTENSITY_LABELS[set.intensity] : '—'}
-                            </span>
-                          </Button>
-                          
-                          {/* Actions */}
-                          <div className="flex items-center justify-end">
-                            {isEditMode ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 text-muted-foreground hover:text-destructive"
-                                onClick={() => removeSetFromExercise(we.exerciseId, i)}
-                                disabled={sets.length === 1}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                variant={set.completed ? 'default' : 'outline'}
-                                size="icon"
-                                className="h-9 w-9"
-                                onClick={() => toggleSetComplete(we.exerciseId, i)}
-                              >
-                                <Check className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {sets.map((set, i) => (
+                      <SetRow
+                        key={i}
+                        index={i}
+                        weight={set.weight}
+                        reps={set.reps}
+                        intensity={set.intensity}
+                        setType={set.setType || 'normal'}
+                        completed={set.completed}
+                        isEditMode={isEditMode}
+                        isOnlySet={sets.length === 1}
+                        onWeightChange={(weight) => updateSetLog(we.exerciseId, i, 'weight', weight)}
+                        onOpenRepsPicker={() => setRepsPicker({ exerciseId: we.exerciseId, setIndex: i })}
+                        onOpenIntensityPicker={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex: i })}
+                        onOpenSetTypePicker={() => setSetTypePicker({ exerciseId: we.exerciseId, setIndex: i })}
+                        onToggleComplete={() => toggleSetComplete(we.exerciseId, i)}
+                        onRemoveSet={() => removeSetFromExercise(we.exerciseId, i)}
+                      />
+                    ))}
                     
                     {isEditMode && (
                       <Button
