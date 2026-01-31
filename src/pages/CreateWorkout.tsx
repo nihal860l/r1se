@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Search, Trash2, ChevronDown, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,13 +11,13 @@ import {
   SetType, 
   IntensityLevel,
   SET_TYPE_LABELS,
-  SET_TYPE_SHORT_LABELS,
   INTENSITY_LABELS,
 } from '@/types/workout';
 import { useToast } from '@/hooks/use-toast';
 import { ExerciseCard } from '@/components/ExerciseCard';
 import { Layout } from '@/components/Layout';
 import { PickerDialog } from '@/components/PickerDialog';
+import { CreateSetRow } from '@/components/CreateSetRow';
 
 // Set type options (no dropset)
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
@@ -285,87 +285,26 @@ export default function CreateWorkout() {
                       <div className="space-y-2">
                         {/* Header row */}
                         <div className="grid grid-cols-[48px_1fr_64px_48px] gap-2 text-xs text-muted-foreground px-1">
-                          <span className="text-center">Set</span>
-                          <span>Weight (kg)</span>
-                          <span className="text-center">Intensity</span>
+                          <span className="text-center text-muted-foreground">Set</span>
+                          <span className="text-muted-foreground">Weight (kg)</span>
+                          <span className="text-center text-muted-foreground">Intensity</span>
                           <span></span>
                         </div>
-                        
-                        {we.sets.map((set, setIndex) => {
-                          const setType = set.setType || 'normal';
-                          const isNormal = setType === 'normal';
-                          
-                          return (
-                            <div
-                              key={setIndex}
-                              className="grid grid-cols-[48px_1fr_64px_48px] gap-2 items-center p-2 bg-background/50 rounded-lg"
-                            >
-                              {/* Set column - integrated with type */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`h-9 px-1 text-xs font-medium ${!isNormal ? 'text-primary' : ''}`}
-                                onClick={() => setSetTypePicker({ exerciseId: we.exerciseId, setIndex })}
-                              >
-                                {isNormal ? (
-                                  <span className="text-sm">{setIndex + 1}</span>
-                                ) : (
-                                  <span className="truncate">{SET_TYPE_SHORT_LABELS[setType]}</span>
-                                )}
-                                <ChevronDown className="w-3 h-3 ml-0.5 opacity-50 shrink-0" />
-                              </Button>
-                              
-                              {/* Weight */}
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0"
-                                  onClick={() => updateSetWeight(we.exerciseId, setIndex, set.weight - 2.5)}
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </Button>
-                                <Input
-                                  type="number"
-                                  value={set.weight}
-                                  onChange={(e) => updateSetWeight(we.exerciseId, setIndex, Number(e.target.value))}
-                                  className="h-9 text-center min-w-0"
-                                />
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 shrink-0"
-                                  onClick={() => updateSetWeight(we.exerciseId, setIndex, set.weight + 2.5)}
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </Button>
-                              </div>
-                              
-                              {/* Intensity */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 text-xs px-1"
-                                onClick={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex })}
-                              >
-                                <span className="truncate">
-                                  {set.intensity ? INTENSITY_LABELS[set.intensity] : '2 RIR'}
-                                </span>
-                              </Button>
-                              
-                              {/* Delete */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => removeSet(we.exerciseId, setIndex)}
-                                disabled={we.sets.length === 1}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          );
-                        })}
+
+                        {we.sets.map((set, setIndex) => (
+                          <CreateSetRow
+                            key={setIndex}
+                            index={setIndex}
+                            weight={set.weight}
+                            setType={set.setType || 'normal'}
+                            intensity={set.intensity || '2rir'}
+                            isOnlySet={we.sets.length === 1}
+                            onWeightChange={(weight) => updateSetWeight(we.exerciseId, setIndex, weight)}
+                            onOpenIntensityPicker={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex })}
+                            onOpenSetTypePicker={() => setSetTypePicker({ exerciseId: we.exerciseId, setIndex })}
+                            onRemoveSet={() => removeSet(we.exerciseId, setIndex)}
+                          />
+                        ))}
                         
                         <Button
                           variant="outline"
