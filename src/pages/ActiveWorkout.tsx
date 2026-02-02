@@ -292,6 +292,7 @@ export default function ActiveWorkout() {
               <Button
                 variant={isEditMode ? 'default' : 'outline'}
                 size="sm"
+                className="text-foreground"
                 onClick={() => setIsEditMode(!isEditMode)}
               >
                 <Pencil className="w-4 h-4 mr-1" />
