@@ -58,8 +58,8 @@ export const SET_TYPE_LABELS: Record<SetType, string> = {
 
 export const SET_TYPE_SHORT_LABELS: Record<SetType, string> = {
   normal: 'Normal',
-  superset: 'Super',
-  alternating: 'Alt SS',
+  superset: 'S',
+  alternating: 'A',
 };
 
 export const INTENSITY_LABELS: Record<IntensityLevel, string> = {

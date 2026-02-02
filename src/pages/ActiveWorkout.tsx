@@ -320,7 +320,7 @@ export default function ActiveWorkout() {
               return (
                 <div key={we.exerciseId} className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">{exercise.name}</h3>
+                    <h3 className="font-semibold text-foreground">{exercise.name}</h3>
                     {isEditMode && (
                       <Button
                         variant="ghost"
@@ -366,7 +366,7 @@ export default function ActiveWorkout() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full mt-2"
+                        className="w-full mt-2 text-foreground"
                         onClick={() => addSetToExercise(we.exerciseId)}
                       >
                         <Plus className="w-3 h-3 mr-1" />

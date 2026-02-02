@@ -271,7 +271,7 @@ export default function CreateWorkout() {
                   return (
                     <div key={we.exerciseId} className="bg-secondary/50 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold">{exercise.name}</h4>
+                        <h4 className="font-semibold text-foreground">{exercise.name}</h4>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -309,7 +309,7 @@ export default function CreateWorkout() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full mt-2"
+                          className="w-full mt-2 text-foreground"
                           onClick={() => addSet(we.exerciseId)}
                         >
                           <Plus className="w-3 h-3 mr-1" />
