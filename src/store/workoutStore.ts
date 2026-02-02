@@ -11,6 +11,7 @@ interface WorkoutState {
   addWorkout: (workout: Workout) => void;
   deleteWorkout: (id: string) => void;
   addWorkoutLog: (log: WorkoutLog) => void;
+  deleteWorkoutLog: (id: string) => void;
   addCustomExercise: (exercise: Exercise) => void;
   deleteCustomExercise: (id: string) => void;
   addCustomMuscleGroup: (muscleGroup: string) => void;
@@ -33,6 +34,10 @@ export const useWorkoutStore = create<WorkoutState>()(
         })),
       addWorkoutLog: (log) =>
         set((state) => ({ workoutLogs: [log, ...state.workoutLogs] })),
+      deleteWorkoutLog: (id) =>
+        set((state) => ({
+          workoutLogs: state.workoutLogs.filter((l) => l.id !== id),
+        })),
       addCustomExercise: (exercise) =>
         set((state) => ({ customExercises: [...state.customExercises, exercise] })),
       deleteCustomExercise: (id) =>
