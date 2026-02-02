@@ -1,13 +1,42 @@
+import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Dumbbell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Clock, Dumbbell, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { INTENSITY_LABELS, SET_TYPE_LABELS } from '@/types/workout';
+import { useCloudSync } from '@/hooks/useCloudSync';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const History = () => {
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
+  const deleteWorkoutLog = useWorkoutStore((state) => state.deleteWorkoutLog);
+  const { syncDeleteHistory } = useCloudSync();
+  const { toast } = useToast();
+  
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    deleteWorkoutLog(id);
+    await syncDeleteHistory(id);
+    setDeleteConfirm(null);
+    toast({
+      title: 'Deleted',
+      description: 'Workout history entry has been removed.',
+    });
+  };
 
   return (
     <Layout>
@@ -30,8 +59,18 @@ const History = () => {
             </div>
           ) : (
             workoutLogs.map((log) => (
-              <Card key={log.id} className="bg-card">
-                <CardHeader className="pb-2">
+              <Card key={log.id} className="bg-card relative">
+                {/* Delete Button */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-3 right-3 h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => setDeleteConfirm(log.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+                
+                <CardHeader className="pb-2 pr-12">
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-lg font-semibold">{log.workoutName}</CardTitle>
                     <Badge variant="secondary" className="shrink-0">
@@ -82,6 +121,27 @@ const History = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workout Entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this workout from your history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

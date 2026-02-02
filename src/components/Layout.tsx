@@ -2,6 +2,9 @@ import { ReactNode, createContext, useContext, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Dumbbell, Library, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GoogleAuthButton } from './GoogleAuthButton';
+import { SettingsDialog } from './SettingsDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LayoutProps {
   children: ReactNode;
@@ -29,6 +32,7 @@ const navItems = [
 export function Layout({ children, hideNav = false }: LayoutProps) {
   const location = useLocation();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <HeaderContext.Provider value={{ isOverlayOpen, setIsOverlayOpen }}>
@@ -40,7 +44,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
             isOverlayOpen ? "bg-white" : "bg-background"
           )}
         >
-          <div className="container max-w-lg mx-auto py-4 px-4">
+          <div className="container max-w-lg mx-auto py-4 px-4 flex items-center justify-between">
             <h1 
               className={cn(
                 "text-2xl font-black tracking-tight transition-colors duration-200",
@@ -49,6 +53,10 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
             >
               R1SE
             </h1>
+            <div className="flex items-center gap-2">
+              <GoogleAuthButton />
+              {user && <SettingsDialog />}
+            </div>
           </div>
         </header>
 

@@ -14,7 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercises: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          exercise_id: string
+          id: string
+          is_custom: boolean
+          is_override: boolean
+          muscle_group: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          exercise_id: string
+          id?: string
+          is_custom?: boolean
+          is_override?: boolean
+          muscle_group: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          exercise_id?: string
+          id?: string
+          is_custom?: boolean
+          is_override?: boolean
+          muscle_group?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          google_user_id: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          google_user_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          google_user_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_history: {
+        Row: {
+          completed_at: string
+          created_at: string
+          duration: number
+          exercises: Json
+          history_id: string
+          id: string
+          user_id: string
+          workout_name: string
+          workout_template_id: string | null
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          duration?: number
+          exercises?: Json
+          history_id: string
+          id?: string
+          user_id: string
+          workout_name: string
+          workout_template_id?: string | null
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          duration?: number
+          exercises?: Json
+          history_id?: string
+          id?: string
+          user_id?: string
+          workout_name?: string
+          workout_template_id?: string | null
+        }
+        Relationships: []
+      }
+      workouts: {
+        Row: {
+          created_at: string
+          exercises: Json
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercises?: Json
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          exercises?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          workout_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
