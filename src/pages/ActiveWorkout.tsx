@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { InlineCreateExerciseDialog } from '@/components/InlineCreateExerciseDialog';
 
 interface SetLog {
   weight: number;
@@ -75,6 +76,7 @@ export default function ActiveWorkout() {
   const [repsPicker, setRepsPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
+  const [showCreateExercise, setShowCreateExercise] = useState(false);
 
   const filteredExercises = allExercises.filter((exercise) =>
     exercise.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
@@ -154,6 +156,12 @@ export default function ActiveWorkout() {
     }));
     setShowAddExercise(false);
     setExerciseSearch('');
+  };
+
+  // Handle inline exercise creation - auto-add to active workout
+  const handleInlineExerciseCreated = (exerciseId: string) => {
+    addExerciseToWorkout(exerciseId);
+    setShowCreateExercise(false);
   };
 
   const removeExercise = (exerciseId: string) => {
@@ -475,10 +483,30 @@ export default function ActiveWorkout() {
                   No exercises found
                 </p>
               )}
+              
+              {/* Create New Exercise Button */}
+              <Button
+                variant="outline"
+                className="w-full mt-2"
+                onClick={() => {
+                  setShowAddExercise(false);
+                  setShowCreateExercise(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Exercise
+              </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Inline Create Exercise Dialog */}
+      <InlineCreateExerciseDialog
+        open={showCreateExercise}
+        onOpenChange={setShowCreateExercise}
+        onExerciseCreated={handleInlineExerciseCreated}
+      />
 
       {/* Cancel Confirmation Dialog */}
       <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
