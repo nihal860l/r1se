@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Dumbbell, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { INTENSITY_LABELS, SET_TYPE_LABELS } from '@/types/workout';
-import { useCloudSync } from '@/hooks/useCloudSync';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -23,14 +22,13 @@ import {
 const History = () => {
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const deleteWorkoutLog = useWorkoutStore((state) => state.deleteWorkoutLog);
-  const { syncDeleteHistory } = useCloudSync();
   const { toast } = useToast();
   
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
+    // Store action will trigger cloud sync callback automatically
     deleteWorkoutLog(id);
-    await syncDeleteHistory(id);
     setDeleteConfirm(null);
     toast({
       title: 'Deleted',

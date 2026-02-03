@@ -18,6 +18,7 @@ import { ExerciseCard } from '@/components/ExerciseCard';
 import { Layout } from '@/components/Layout';
 import { PickerDialog } from '@/components/PickerDialog';
 import { CreateSetRow } from '@/components/CreateSetRow';
+import { InlineCreateExerciseDialog } from '@/components/InlineCreateExerciseDialog';
 
 // Set type options (no dropset)
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
@@ -33,6 +34,7 @@ export default function CreateWorkout() {
   // Picker state for set type and intensity
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
+  const [showCreateExercise, setShowCreateExercise] = useState(false);
   
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
   const customExercises = useWorkoutStore((state) => state.customExercises);
@@ -128,6 +130,17 @@ export default function CreateWorkout() {
           : e
       )
     );
+  };
+
+  // Handle inline exercise creation - auto-add to workout
+  const handleInlineExerciseCreated = (exerciseId: string) => {
+    setSelectedExercises((prev) => [
+      ...prev,
+      {
+        exerciseId,
+        sets: [{ weight: 0, setType: 'normal' as SetType, intensity: '2rir' as IntensityLevel }],
+      },
+    ]);
   };
 
   const handleCreate = () => {
@@ -244,6 +257,16 @@ export default function CreateWorkout() {
                     No exercises found
                   </p>
                 )}
+                
+                {/* Create New Exercise Button */}
+                <Button
+                  variant="outline"
+                  className="w-full mt-2"
+                  onClick={() => setShowCreateExercise(true)}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Exercise
+                </Button>
               </div>
             </div>
             <div className="py-4 border-t">
@@ -358,6 +381,13 @@ export default function CreateWorkout() {
           }
         }}
         getLabel={(item) => INTENSITY_LABELS[item]}
+      />
+
+      {/* Inline Create Exercise Dialog */}
+      <InlineCreateExerciseDialog
+        open={showCreateExercise}
+        onOpenChange={setShowCreateExercise}
+        onExerciseCreated={handleInlineExerciseCreated}
       />
     </Layout>
   );
