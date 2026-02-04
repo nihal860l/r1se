@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Trash2, ArrowLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,16 @@ import { Layout } from '@/components/Layout';
 import { PickerDialog } from '@/components/PickerDialog';
 import { CreateSetRow } from '@/components/CreateSetRow';
 import { InlineCreateExerciseDialog } from '@/components/InlineCreateExerciseDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // Set type options (no dropset)
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
@@ -35,10 +45,25 @@ export default function CreateWorkout() {
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [showCreateExercise, setShowCreateExercise] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
+
+  const handleCancel = () => {
+    // If no data entered, just navigate back
+    if (!name.trim() && selectedExercises.length === 0) {
+      navigate('/');
+      return;
+    }
+    setShowCancelConfirm(true);
+  };
+
+  const confirmCancel = () => {
+    setShowCancelConfirm(false);
+    navigate('/');
+  };
 
   const allExercises = [...exercises, ...customExercises];
   
@@ -174,30 +199,41 @@ export default function CreateWorkout() {
     <Layout hideNav>
       <div className="container max-w-lg animate-fade-in px-4 flex flex-col min-h-[calc(100vh-60px)]">
         {/* Header */}
-        <div className="pt-4 pb-4 flex items-center gap-3">
+        <div className="pt-4 pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-foreground"
+              onClick={() => {
+                if (step === 'name') navigate('/');
+                else if (step === 'exercises') setStep('name');
+                else setStep('exercises');
+              }}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">
+                {step === 'name' && 'Name Your Workout'}
+                {step === 'exercises' && 'Select Exercises'}
+                {step === 'configure' && 'Configure Sets'}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {step === 'name' && 'Give your workout a memorable name'}
+                {step === 'exercises' && `${selectedExercises.length} exercises selected`}
+                {step === 'configure' && 'Set weight, type, and intensity for each set'}
+              </p>
+            </div>
+          </div>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              if (step === 'name') navigate('/');
-              else if (step === 'exercises') setStep('name');
-              else setStep('exercises');
-            }}
+            onClick={handleCancel}
+            className="text-foreground"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <X className="w-5 h-5" />
           </Button>
-          <div>
-            <h2 className="text-xl font-semibold">
-              {step === 'name' && 'Name Your Workout'}
-              {step === 'exercises' && 'Select Exercises'}
-              {step === 'configure' && 'Configure Sets'}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {step === 'name' && 'Give your workout a memorable name'}
-              {step === 'exercises' && `${selectedExercises.length} exercises selected`}
-              {step === 'configure' && 'Set weight, type, and intensity for each set'}
-            </p>
-          </div>
         </div>
 
         {/* Step: Name */}
@@ -389,6 +425,24 @@ export default function CreateWorkout() {
         onOpenChange={setShowCreateExercise}
         onExerciseCreated={handleInlineExerciseCreated}
       />
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Workout Creation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel? All unsaved changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel}>
+              Discard & Exit
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

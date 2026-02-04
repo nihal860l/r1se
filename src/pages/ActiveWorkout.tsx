@@ -375,7 +375,7 @@ export default function ActiveWorkout() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full mt-2 text-foreground"
+                        className="w-full mt-2 border-foreground/20 text-foreground"
                         onClick={() => addSetToExercise(we.exerciseId)}
                       >
                         <Plus className="w-3 h-3 mr-1" />
@@ -390,7 +390,7 @@ export default function ActiveWorkout() {
             {isEditMode && (
               <Button
                 variant="outline"
-                className="w-full"
+                className="w-full text-foreground"
                 onClick={() => setShowAddExercise(true)}
               >
                 <Plus className="w-4 h-4 mr-2" />
