@@ -44,6 +44,10 @@
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 90%;
     --sidebar-ring: 142 76% 46%;
+
+    /* Semantic visibility tokens */
+    --icon-default: 0 0% 5%;
+    --icon-muted: 0 0% 45%;
   }
 
   .dark {
@@ -83,6 +87,10 @@
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 0 0% 15%;
     --sidebar-ring: 142 76% 46%;
+
+    /* Semantic visibility tokens */
+    --icon-default: 0 0% 95%;
+    --icon-muted: 0 0% 55%;
   }
 }
 
