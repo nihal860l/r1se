@@ -261,7 +261,7 @@ export default function CreateWorkout() {
                 {/* Create New Exercise Button */}
                 <Button
                   variant="outline"
-                  className="w-full mt-2"
+                  className="w-full mt-2 text-foreground"
                   onClick={() => setShowCreateExercise(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />

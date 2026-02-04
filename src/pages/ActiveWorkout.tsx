@@ -306,7 +306,7 @@ export default function ActiveWorkout() {
                 <Pencil className="w-4 h-4 mr-1" />
                 {isEditMode ? 'Done' : 'Edit'}
               </Button>
-              <Button variant="ghost" size="icon" onClick={handleCancel}>
+              <Button variant="ghost" size="icon" onClick={handleCancel} className="text-foreground">
                 <X className="w-5 h-5" />
               </Button>
             </div>
@@ -487,7 +487,7 @@ export default function ActiveWorkout() {
               {/* Create New Exercise Button */}
               <Button
                 variant="outline"
-                className="w-full mt-2"
+                className="w-full mt-2 text-foreground"
                 onClick={() => {
                   setShowAddExercise(false);
                   setShowCreateExercise(true);
