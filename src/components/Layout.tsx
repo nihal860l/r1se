@@ -1,6 +1,6 @@
 import { ReactNode, createContext, useContext, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Dumbbell, Library, History } from 'lucide-react';
+import { Calendar, ClipboardList, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GoogleAuthButton } from './GoogleAuthButton';
 import { SettingsDialog } from './SettingsDialog';
@@ -24,8 +24,8 @@ const HeaderContext = createContext<HeaderContextType>({
 export const useHeaderContext = () => useContext(HeaderContext);
 
 const navItems = [
-  { to: '/', icon: Dumbbell, label: 'Workouts' },
-  { to: '/exercises', icon: Library, label: 'Exercises' },
+  { to: '/', icon: Calendar, label: 'Today' },
+  { to: '/plan', icon: ClipboardList, label: 'Plan' },
   { to: '/history', icon: History, label: 'History' },
 ];
 
