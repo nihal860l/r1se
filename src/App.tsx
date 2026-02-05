@@ -4,7 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
-import Index from "./pages/Index";
+import Today from "./pages/Today";
+import Plan from "./pages/Plan";
+import Workouts from "./pages/Workouts";
+import WorkoutPlan from "./pages/WorkoutPlan";
 import Exercises from "./pages/Exercises";
 import History from "./pages/History";
 import CreateWorkout from "./pages/CreateWorkout";
@@ -24,7 +27,10 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Today />} />
+                <Route path="/plan" element={<Plan />} />
+                <Route path="/workouts" element={<Workouts />} />
+                <Route path="/workout-plan" element={<WorkoutPlan />} />
                 <Route path="/exercises" element={<Exercises />} />
                 <Route path="/history" element={<History />} />
                 <Route path="/create-workout" element={<CreateWorkout />} />

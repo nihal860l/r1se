@@ -68,3 +68,49 @@ export const INTENSITY_LABELS: Record<IntensityLevel, string> = {
   '1rir': '1 RIR',
   failure: 'Failure',
 };
+
+// Workout Plan Types
+export type DayAssignmentType = 'Workout' | 'Rest' | 'Empty';
+
+export interface DayAssignment {
+  type: DayAssignmentType;
+  workoutId: string | null;
+}
+
+export interface PlanException {
+  date: string; // YYYY-MM-DD
+  type: DayAssignmentType;
+  workoutId: string | null;
+}
+
+export interface WeeklyAssignments {
+  '0': DayAssignment; // Sunday
+  '1': DayAssignment; // Monday
+  '2': DayAssignment; // Tuesday
+  '3': DayAssignment; // Wednesday
+  '4': DayAssignment; // Thursday
+  '5': DayAssignment; // Friday
+  '6': DayAssignment; // Saturday
+}
+
+export interface WorkoutPlan {
+  id: string;
+  planId: string;
+  name: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string | null;
+  weeklyAssignments: WeeklyAssignments;
+  exceptions: PlanException[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const DEFAULT_WEEKLY_ASSIGNMENTS: WeeklyAssignments = {
+  '0': { type: 'Empty', workoutId: null },
+  '1': { type: 'Empty', workoutId: null },
+  '2': { type: 'Empty', workoutId: null },
+  '3': { type: 'Empty', workoutId: null },
+  '4': { type: 'Empty', workoutId: null },
+  '5': { type: 'Empty', workoutId: null },
+  '6': { type: 'Empty', workoutId: null },
+};

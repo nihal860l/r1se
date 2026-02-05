@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
-import { Workout, WorkoutLog, Exercise } from '@/types/workout';
+import { Workout, WorkoutLog, Exercise, WorkoutPlan, WeeklyAssignments, PlanException } from '@/types/workout';
 import { Json } from '@/integrations/supabase/types';
 
 /**
@@ -29,6 +29,7 @@ export function useCloudSync() {
   const workouts = useWorkoutStore((state) => state.workouts);
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const customExercises = useWorkoutStore((state) => state.customExercises);
+  const workoutPlan = useWorkoutStore((state) => state.workoutPlan);
 
   // Push a single workout to cloud
   const pushWorkout = useCallback(async (workout: Workout) => {
@@ -135,6 +136,25 @@ export function useCloudSync() {
     }
   }, [user]);
 
+  // Push workout plan to cloud
+  const pushWorkoutPlan = useCallback(async (plan: WorkoutPlan) => {
+    if (!user) return;
+    
+    try {
+      await supabase.from('workout_plans').upsert({
+        user_id: user.id,
+        plan_id: plan.planId,
+        name: plan.name,
+        start_date: plan.startDate,
+        end_date: plan.endDate,
+        weekly_assignments: plan.weeklyAssignments as unknown as Json,
+        exceptions: plan.exceptions as unknown as Json,
+      }, { onConflict: 'user_id,plan_id' });
+    } catch (error) {
+      console.error('Failed to push workout plan to cloud:', error);
+    }
+  }, [user]);
+
   // Upload ALL local data to cloud (first-time user)
   const uploadAllToCloud = useCallback(async () => {
     if (!user || syncInProgress.current) return;
@@ -157,13 +177,18 @@ export function useCloudSync() {
         await pushWorkoutLog(log);
       }
 
+      // Upload workout plan
+      if (workoutPlan) {
+        await pushWorkoutPlan(workoutPlan);
+      }
+
       lastSyncTime.current = Date.now();
     } catch (error) {
       console.error('Upload to cloud failed:', error);
     } finally {
       syncInProgress.current = false;
     }
-  }, [user, customExercises, workouts, workoutLogs, pushExercise, pushWorkout, pushWorkoutLog]);
+  }, [user, customExercises, workouts, workoutLogs, workoutPlan, pushExercise, pushWorkout, pushWorkoutLog, pushWorkoutPlan]);
 
   // Download cloud data and replace local state (ONE-TIME on initial login)
   const hydrateFromCloud = useCallback(async () => {
@@ -228,6 +253,31 @@ export function useCloudSync() {
         useWorkoutStore.setState({ workoutLogs: historyData });
       }
 
+      // Fetch workout plan
+      const { data: cloudPlans } = await supabase
+        .from('workout_plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (cloudPlans && cloudPlans.length > 0) {
+        const p = cloudPlans[0];
+        const planData: WorkoutPlan = {
+          id: p.id,
+          planId: p.plan_id,
+          name: p.name,
+          startDate: p.start_date,
+          endDate: p.end_date,
+          weeklyAssignments: p.weekly_assignments as unknown as WeeklyAssignments,
+          exceptions: (p.exceptions as unknown as PlanException[]) || [],
+          createdAt: new Date(p.created_at),
+          updatedAt: new Date(p.updated_at),
+        };
+        
+        useWorkoutStore.setState({ workoutPlan: planData });
+      }
+
       hasHydrated.current = true;
       lastSyncTime.current = Date.now();
       
@@ -263,7 +313,12 @@ export function useCloudSync() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
 
-      const hasCloudData = (count && count > 0) || (exerciseCount && exerciseCount > 0) || (historyCount && historyCount > 0);
+      const { count: planCount } = await supabase
+        .from('workout_plans')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      const hasCloudData = (count && count > 0) || (exerciseCount && exerciseCount > 0) || (historyCount && historyCount > 0) || (planCount && planCount > 0);
 
       if (hasCloudData) {
         // Returning user - hydrate from cloud (ONE-TIME)
@@ -282,6 +337,7 @@ export function useCloudSync() {
     pushWorkout, 
     pushExercise, 
     pushWorkoutLog,
+    pushWorkoutPlan,
     syncDeleteWorkout,
     syncDeleteExercise,
     syncDeleteHistory,

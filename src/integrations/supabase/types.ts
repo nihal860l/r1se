@@ -122,6 +122,45 @@ export type Database = {
         }
         Relationships: []
       }
+      workout_plans: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          exceptions: Json
+          id: string
+          name: string
+          plan_id: string
+          start_date: string
+          updated_at: string
+          user_id: string
+          weekly_assignments: Json
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          exceptions?: Json
+          id?: string
+          name?: string
+          plan_id: string
+          start_date?: string
+          updated_at?: string
+          user_id: string
+          weekly_assignments?: Json
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          exceptions?: Json
+          id?: string
+          name?: string
+          plan_id?: string
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+          weekly_assignments?: Json
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           created_at: string
