@@ -39,11 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
+    // Use the current origin for redirect - works for both preview and published URLs
+    const redirectUrl = window.location.origin;
+    
+    console.log('Initiating Google sign-in with redirect:', redirectUrl);
+    
     const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: `${window.location.origin}/`,
+      redirect_uri: redirectUrl,
     });
     
     if (result.error) {
+      console.error('Google sign-in error:', result.error);
       return { error: result.error };
     }
     
