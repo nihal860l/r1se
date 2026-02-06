@@ -1,9 +1,11 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { initCapacitor } from "./capacitor-init";
 
-// Initialize Capacitor for native platforms
-initCapacitor();
-
+// Render React app first
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Initialize Capacitor after React is mounted (async, non-blocking)
+import("./capacitor-init").then(({ initCapacitor }) => {
+  initCapacitor();
+});
