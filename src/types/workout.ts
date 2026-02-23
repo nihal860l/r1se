@@ -1,7 +1,10 @@
 export interface Exercise {
   id: string;
   name: string;
-  category: 'chest' | 'back' | 'shoulders' | 'arms' | 'legs' | 'core' | 'cardio';
+  muscles: string[];
+  keywords: string[];
+  isDefault: boolean;
+  category: string;
   muscleGroup: string;
   description: string;
   isCustom?: boolean;

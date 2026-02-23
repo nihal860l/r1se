@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { Workout, WorkoutLog, Exercise, WorkoutPlan, WeeklyAssignments, PlanException } from '@/types/workout';
 import { Json } from '@/integrations/supabase/types';
+import { generateKeywords, muscleToCategory } from '@/lib/exerciseSearch';
 
 /**
  * MERGE-AWARE CLOUD SYNC
@@ -59,7 +60,7 @@ export function useCloudSync() {
         user_id: user.id,
         exercise_id: exercise.id,
         name: exercise.name,
-        muscle_group: exercise.muscleGroup,
+        muscle_group: exercise.muscles.join(' / '),
         category: exercise.category,
         description: exercise.description,
         is_custom: true,
@@ -204,14 +205,20 @@ export function useCloudSync() {
         .eq('user_id', user.id);
 
       if (cloudExercises && cloudExercises.length > 0) {
-        const exercises: Exercise[] = cloudExercises.map((e) => ({
-          id: e.exercise_id,
-          name: e.name,
-          muscleGroup: e.muscle_group,
-          category: e.category as Exercise['category'],
-          description: e.description || '',
-          isCustom: e.is_custom,
-        }));
+        const exercises: Exercise[] = cloudExercises.map((e) => {
+          const muscles = e.muscle_group.split(' / ').map((s: string) => s.trim()).filter(Boolean);
+          return {
+            id: e.exercise_id,
+            name: e.name,
+            muscles,
+            keywords: generateKeywords(e.name, muscles),
+            isDefault: false,
+            muscleGroup: muscles[0] || e.muscle_group,
+            category: e.category || muscleToCategory(muscles[0] || ''),
+            description: e.description || e.name,
+            isCustom: e.is_custom,
+          };
+        });
         
         useWorkoutStore.setState({ customExercises: exercises });
       }

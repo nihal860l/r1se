@@ -211,6 +211,24 @@ export const useWorkoutStore = create<WorkoutState>()(
     }),
     {
       name: 'workout-storage',
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 2 && persistedState) {
+          const state = persistedState as any;
+          if (state.customExercises) {
+            state.customExercises = state.customExercises.map((e: any) => ({
+              ...e,
+              muscles: e.muscles || [e.muscleGroup || 'Other'].filter(Boolean),
+              keywords: e.keywords || [],
+              isDefault: e.isDefault ?? false,
+              description: e.description || e.name || '',
+              category: e.category || 'other',
+              muscleGroup: e.muscleGroup || (e.muscles?.[0]) || 'Other',
+            }));
+          }
+        }
+        return persistedState as WorkoutState;
+      },
       partialize: (state) => ({
         workouts: state.workouts,
         workoutLogs: state.workoutLogs,

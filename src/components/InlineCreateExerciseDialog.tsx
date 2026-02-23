@@ -9,21 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Exercise } from '@/types/workout';
-import { categoryLabels } from '@/data/exercises';
+import { generateKeywords, muscleToCategory } from '@/lib/exerciseSearch';
 import { toast } from 'sonner';
 import { useCloudSync } from '@/hooks/useCloudSync';
 import { useAuth } from '@/hooks/useAuth';
-
-const categories = Object.keys(categoryLabels) as Exercise['category'][];
 
 interface InlineCreateExerciseDialogProps {
   open: boolean;
@@ -37,8 +28,7 @@ export function InlineCreateExerciseDialog({
   onExerciseCreated,
 }: InlineCreateExerciseDialogProps) {
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<Exercise['category']>('chest');
-  const [muscleGroup, setMuscleGroup] = useState('');
+  const [musclesInput, setMusclesInput] = useState('');
   const [description, setDescription] = useState('');
 
   const addCustomExercise = useWorkoutStore((state) => state.addCustomExercise);
@@ -49,8 +39,7 @@ export function InlineCreateExerciseDialog({
   useEffect(() => {
     if (open) {
       setName('');
-      setCategory('chest');
-      setMuscleGroup('');
+      setMusclesInput('');
       setDescription('');
     }
   }, [open]);
@@ -60,30 +49,39 @@ export function InlineCreateExerciseDialog({
       toast.error('Please enter an exercise name');
       return;
     }
-    if (!muscleGroup.trim()) {
-      toast.error('Please enter a muscle group');
+    if (!musclesInput.trim()) {
+      toast.error('Please enter at least one muscle');
       return;
     }
+
+    const muscles = musclesInput
+      .split(/[,\/]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const category = muscleToCategory(muscles[0]);
 
     const newExercise: Exercise = {
       id: `custom-${Date.now()}`,
       name: name.trim(),
+      muscles,
+      keywords: generateKeywords(name.trim(), muscles),
+      isDefault: false,
       category,
-      muscleGroup: muscleGroup.trim(),
-      description: description.trim() || 'Custom exercise',
+      muscleGroup: muscles[0],
+      description: description.trim() || name.trim(),
       isCustom: true,
     };
 
     // Add to local state
     addCustomExercise(newExercise);
-    
+
     // Sync to cloud if logged in
     if (user) {
       await pushExercise(newExercise);
     }
-    
+
     toast.success('Exercise created!');
-    
+
     // Close dialog and notify parent with new exercise ID
     onOpenChange(false);
     onExerciseCreated(newExercise.id);
@@ -112,29 +110,16 @@ export function InlineCreateExerciseDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="inline-category">Category</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as Exercise['category'])}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {categoryLabels[cat]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="inline-muscleGroup">Primary Muscle Group</Label>
+            <Label htmlFor="inline-muscles">Muscles (separate with comma or /)</Label>
             <Input
-              id="inline-muscleGroup"
-              placeholder="e.g., Quadriceps"
-              value={muscleGroup}
-              onChange={(e) => setMuscleGroup(e.target.value)}
+              id="inline-muscles"
+              placeholder="e.g., Quadriceps, Glutes"
+              value={musclesInput}
+              onChange={(e) => setMusclesInput(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              e.g. "Upper Chest / Triceps Lateral Head"
+            </p>
           </div>
 
           <div className="space-y-2">

@@ -18,6 +18,7 @@ import {
   CompletedSet,
 } from '@/types/workout';
 import { exercises } from '@/data/exercises';
+import { useExerciseSearch } from '@/lib/exerciseSearch';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -82,10 +83,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
 
   const allExercises = [...exercises, ...customExercises];
 
-  const filteredExercises = allExercises.filter((exercise) =>
-    exercise.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-    exercise.muscleGroup.toLowerCase().includes(exerciseSearch.toLowerCase())
-  );
+  const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
   useEffect(() => {
     if (open && workout) {

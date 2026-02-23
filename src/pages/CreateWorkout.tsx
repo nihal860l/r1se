@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { exercises } from '@/data/exercises';
+import { useExerciseSearch } from '@/lib/exerciseSearch';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { 
   WorkoutExercise, 
@@ -67,10 +68,7 @@ export default function CreateWorkout() {
 
   const allExercises = [...exercises, ...customExercises];
   
-  const filteredExercises = allExercises.filter((exercise) =>
-    exercise.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-    exercise.muscleGroup.toLowerCase().includes(exerciseSearch.toLowerCase())
-  );
+  const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
   const toggleExercise = (exerciseId: string) => {
     setSelectedExercises((prev) => {
