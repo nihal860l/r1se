@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Exercise } from '@/types/workout';
-import { exercises as builtInExercises } from '@/data/exercises';
+import { allMuscleGroups } from '@/data/exercises';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useHeaderContext } from './Layout';
@@ -31,11 +31,9 @@ interface EditExerciseDialogProps {
 export function EditExerciseDialog({ exercise, open, onOpenChange }: EditExerciseDialogProps) {
   const { customMuscleGroups, exerciseMuscleOverrides, addCustomMuscleGroup, setExerciseMuscleGroup } = useWorkoutStore();
   const { setIsOverlayOpen } = useHeaderContext();
-  
-  // Get unique muscle groups from built-in exercises
-  const builtInMuscleGroups = [...new Set(builtInExercises.map(e => e.muscleGroup))];
-  const allMuscleGroups = [...new Set([...builtInMuscleGroups, ...customMuscleGroups])].sort();
-  
+
+  const combinedMuscleGroups = [...new Set([...allMuscleGroups, ...customMuscleGroups])].sort();
+
   const currentMuscleGroup = exerciseMuscleOverrides[exercise.id] || exercise.muscleGroup;
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState(currentMuscleGroup);
   const [newMuscleGroup, setNewMuscleGroup] = useState('');
@@ -77,13 +75,13 @@ export function EditExerciseDialog({ exercise, open, onOpenChange }: EditExercis
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="muscleGroup">Muscle Group</Label>
+            <Label htmlFor="muscleGroup">Primary Muscle Group</Label>
             <Select value={selectedMuscleGroup} onValueChange={setSelectedMuscleGroup}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {allMuscleGroups.map((mg) => (
+                {combinedMuscleGroups.map((mg) => (
                   <SelectItem key={mg} value={mg}>
                     {mg}
                   </SelectItem>

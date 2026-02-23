@@ -12,6 +12,7 @@ import {
   WorkoutExercise,
 } from '@/types/workout';
 import { exercises } from '@/data/exercises';
+import { useExerciseSearch } from '@/lib/exerciseSearch';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -78,10 +79,7 @@ export default function ActiveWorkout() {
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [showCreateExercise, setShowCreateExercise] = useState(false);
 
-  const filteredExercises = allExercises.filter((exercise) =>
-    exercise.name.toLowerCase().includes(exerciseSearch.toLowerCase()) ||
-    exercise.muscleGroup.toLowerCase().includes(exerciseSearch.toLowerCase())
-  );
+  const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
   // Initialize workout
   useEffect(() => {

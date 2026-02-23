@@ -17,42 +17,48 @@ interface ExerciseCardProps {
 export function ExerciseCard({ exercise, onClick, selected, showEdit = true }: ExerciseCardProps) {
   const [editOpen, setEditOpen] = useState(false);
   const exerciseMuscleOverrides = useWorkoutStore((state) => state.exerciseMuscleOverrides);
-  
-  const displayMuscleGroup = exerciseMuscleOverrides[exercise.id] || exercise.muscleGroup;
+
+  const overriddenMuscle = exerciseMuscleOverrides[exercise.id];
+  const displayMuscles = overriddenMuscle ? [overriddenMuscle] : exercise.muscles;
 
   return (
     <>
-      <Card 
+      <Card
         className={`cursor-pointer transition-all duration-200 ${
-          selected 
-            ? 'ring-2 ring-primary bg-primary/5' 
+          selected
+            ? 'ring-2 ring-primary bg-primary/5'
             : 'hover:bg-secondary/50'
         }`}
         onClick={onClick}
       >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
+        <CardContent className="p-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-medium truncate">{exercise.name}</h3>
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                {exercise.description}
-              </p>
+              <h3 className="font-medium text-sm leading-tight">{exercise.name}</h3>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant="secondary" className="capitalize">
-                {displayMuscleGroup}
-              </Badge>
+            <div className="flex items-start gap-1.5 shrink-0">
+              <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
+                {displayMuscles.map((muscle, i) => (
+                  <Badge
+                    key={i}
+                    variant="secondary"
+                    className="text-[10px] px-1.5 py-0.5 leading-tight whitespace-nowrap"
+                  >
+                    {muscle}
+                  </Badge>
+                ))}
+              </div>
               {showEdit && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-6 w-6 shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditOpen(true);
                   }}
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-3 w-3" />
                 </Button>
               )}
             </div>
