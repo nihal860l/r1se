@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useCallback, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, Trash2, ArrowLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,31 +31,46 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-// Set type options (no dropset)
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
 
 export default function CreateWorkout() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editWorkoutId = searchParams.get('edit');
+  const isEditMode = Boolean(editWorkoutId);
+
   const [name, setName] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [step, setStep] = useState<'name' | 'exercises' | 'configure'>('name');
   const [exerciseSearch, setExerciseSearch] = useState('');
   
-  // Picker state for set type and intensity
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [showCreateExercise, setShowCreateExercise] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
+  const workouts = useWorkoutStore((state) => state.workouts);
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
+  const deleteWorkout = useWorkoutStore((state) => state.deleteWorkout);
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
 
+  // Load existing workout data in edit mode
+  useEffect(() => {
+    if (editWorkoutId) {
+      const existing = workouts.find((w) => w.id === editWorkoutId);
+      if (existing) {
+        setName(existing.name);
+        setSelectedExercises(existing.exercises.map((e) => ({ ...e, sets: e.sets.map((s) => ({ ...s })) })));
+        setStep('configure');
+      }
+    }
+  }, [editWorkoutId]);
+
   const handleCancel = () => {
-    // If no data entered, just navigate back
     if (!name.trim() && selectedExercises.length === 0) {
-      navigate('/');
+      navigate(-1);
       return;
     }
     setShowCancelConfirm(true);
@@ -63,7 +78,7 @@ export default function CreateWorkout() {
 
   const confirmCancel = () => {
     setShowCancelConfirm(false);
-    navigate('/');
+    navigate(-1);
   };
 
   const allExercises = [...exercises, ...customExercises];
@@ -155,7 +170,6 @@ export default function CreateWorkout() {
     );
   };
 
-  // Handle inline exercise creation - auto-add to workout
   const handleInlineExerciseCreated = (exerciseId: string) => {
     setSelectedExercises((prev) => [
       ...prev,
@@ -166,25 +180,38 @@ export default function CreateWorkout() {
     ]);
   };
 
-  const handleCreate = () => {
+  const handleSave = () => {
     if (!name.trim() || selectedExercises.length === 0) return;
 
-    addWorkout({
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      exercises: selectedExercises,
-      createdAt: new Date(),
-    });
+    if (isEditMode && editWorkoutId) {
+      // Edit mode: delete old, add updated
+      deleteWorkout(editWorkoutId);
+      addWorkout({
+        id: editWorkoutId,
+        name: name.trim(),
+        exercises: selectedExercises,
+        createdAt: workouts.find((w) => w.id === editWorkoutId)?.createdAt || new Date(),
+      });
+      toast({
+        title: 'Workout updated!',
+        description: `${name} has been saved.`,
+      });
+    } else {
+      addWorkout({
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        exercises: selectedExercises,
+        createdAt: new Date(),
+      });
+      toast({
+        title: 'Workout created!',
+        description: `${name} has been added to your workouts.`,
+      });
+    }
 
-    toast({
-      title: 'Workout created!',
-      description: `${name} has been added to your workouts.`,
-    });
-
-    navigate('/');
+    navigate(-1);
   };
 
-  // Get current picker values
   const currentSetTypeValue = setTypePicker
     ? selectedExercises.find(e => e.exerciseId === setTypePicker.exerciseId)?.sets[setTypePicker.setIndex]?.setType ?? 'normal'
     : 'normal';
@@ -204,7 +231,7 @@ export default function CreateWorkout() {
               size="icon"
               className="text-foreground"
               onClick={() => {
-                if (step === 'name') navigate('/');
+                if (step === 'name') handleCancel();
                 else if (step === 'exercises') setStep('name');
                 else setStep('exercises');
               }}
@@ -213,12 +240,12 @@ export default function CreateWorkout() {
             </Button>
             <div>
               <h2 className="text-xl font-semibold text-foreground">
-                {step === 'name' && 'Name Your Workout'}
+                {step === 'name' && (isEditMode ? 'Edit Workout' : 'Name Your Workout')}
                 {step === 'exercises' && 'Select Exercises'}
                 {step === 'configure' && 'Configure Sets'}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {step === 'name' && 'Give your workout a memorable name'}
+                {step === 'name' && (isEditMode ? 'Update your workout name' : 'Give your workout a memorable name')}
                 {step === 'exercises' && `${selectedExercises.length} exercises selected`}
                 {step === 'configure' && 'Set weight, type, and intensity for each set'}
               </p>
@@ -292,7 +319,6 @@ export default function CreateWorkout() {
                   </p>
                 )}
                 
-                {/* Create New Exercise Button */}
                 <Button
                   variant="outline"
                   className="w-full mt-2 text-foreground"
@@ -340,7 +366,6 @@ export default function CreateWorkout() {
                       </div>
                       
                       <div className="space-y-2">
-                        {/* Header row */}
                         <div className="grid grid-cols-[48px_1fr_64px_48px] gap-2 text-xs text-muted-foreground px-1">
                           <span className="text-center text-muted-foreground">Set</span>
                           <span className="text-muted-foreground">Weight (kg)</span>
@@ -376,11 +401,21 @@ export default function CreateWorkout() {
                     </div>
                   );
                 })}
+
+                {/* Add Exercise button in configure step */}
+                <Button
+                  variant="outline"
+                  className="w-full text-foreground"
+                  onClick={() => setStep('exercises')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Exercise
+                </Button>
               </div>
             </div>
             <div className="py-4 border-t">
-              <Button onClick={handleCreate} className="w-full h-12 text-base">
-                Create Workout
+              <Button onClick={handleSave} className="w-full h-12 text-base">
+                {isEditMode ? 'Save Changes' : 'Create Workout'}
               </Button>
             </div>
           </div>
@@ -428,7 +463,7 @@ export default function CreateWorkout() {
       <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Workout Creation?</AlertDialogTitle>
+            <AlertDialogTitle>Cancel {isEditMode ? 'Editing' : 'Workout Creation'}?</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to cancel? All unsaved changes will be lost.
             </AlertDialogDescription>
