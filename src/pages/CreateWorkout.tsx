@@ -56,9 +56,9 @@ export default function CreateWorkout() {
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
 
-  // Load existing workout data in edit mode
+  // Load existing workout data in edit mode (re-run when workouts hydrate from storage)
   useEffect(() => {
-    if (editWorkoutId) {
+    if (editWorkoutId && workouts.length > 0) {
       const existing = workouts.find((w) => w.id === editWorkoutId);
       if (existing) {
         setName(existing.name);
@@ -66,7 +66,7 @@ export default function CreateWorkout() {
         setStep('configure');
       }
     }
-  }, [editWorkoutId]);
+  }, [editWorkoutId, workouts]);
 
   const handleCancel = () => {
     if (!name.trim() && selectedExercises.length === 0) {
