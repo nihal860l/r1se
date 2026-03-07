@@ -16,12 +16,14 @@ interface WorkoutState {
   onExerciseDeleted?: (exerciseId: string) => void;
   onHistoryDeleted?: (historyId: string) => void;
   onWorkoutAdded?: (workout: Workout) => void;
+  onWorkoutUpdated?: (workout: Workout) => void;
   onExerciseAdded?: (exercise: Exercise) => void;
   onHistoryAdded?: (log: WorkoutLog) => void;
   onPlanUpdated?: (plan: WorkoutPlan) => void;
   
   // Actions
   addWorkout: (workout: Workout) => void;
+  updateWorkout: (id: string, workout: Workout) => void;
   deleteWorkout: (id: string) => void;
   addWorkoutLog: (log: WorkoutLog) => void;
   deleteWorkoutLog: (id: string) => void;
@@ -40,6 +42,7 @@ interface WorkoutState {
     onExerciseDeleted?: (exerciseId: string) => void;
     onHistoryDeleted?: (historyId: string) => void;
     onWorkoutAdded?: (workout: Workout) => void;
+    onWorkoutUpdated?: (workout: Workout) => void;
     onExerciseAdded?: (exercise: Exercise) => void;
     onHistoryAdded?: (log: WorkoutLog) => void;
     onPlanUpdated?: (plan: WorkoutPlan) => void;
@@ -67,14 +70,18 @@ export const useWorkoutStore = create<WorkoutState>()(
       
       addWorkout: (workout) => {
         set((state) => ({ workouts: [...state.workouts, workout] }));
-        // Trigger sync callback
         get().onWorkoutAdded?.(workout);
+      },
+      updateWorkout: (id, workout) => {
+        set((state) => ({
+          workouts: state.workouts.map((w) => w.id === id ? workout : w),
+        }));
+        get().onWorkoutUpdated?.(workout);
       },
       deleteWorkout: (id) => {
         set((state) => ({
           workouts: state.workouts.filter((w) => w.id !== id),
         }));
-        // Trigger sync callback
         get().onWorkoutDeleted?.(id);
       },
       addWorkoutLog: (log) => {
