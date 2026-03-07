@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, Trash2, ArrowLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,18 +52,23 @@ export default function CreateWorkout() {
   
   const workouts = useWorkoutStore((state) => state.workouts);
   const addWorkout = useWorkoutStore((state) => state.addWorkout);
-  const deleteWorkout = useWorkoutStore((state) => state.deleteWorkout);
+  const updateWorkout = useWorkoutStore((state) => state.updateWorkout);
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
 
+  // Guard: only hydrate from existing workout ONCE
+  const hasHydratedEdit = useRef(false);
+
   // Load existing workout data in edit mode (re-run when workouts hydrate from storage)
   useEffect(() => {
+    if (hasHydratedEdit.current) return;
     if (editWorkoutId && workouts.length > 0) {
       const existing = workouts.find((w) => w.id === editWorkoutId);
       if (existing) {
         setName(existing.name);
         setSelectedExercises(existing.exercises.map((e) => ({ ...e, sets: e.sets.map((s) => ({ ...s })) })));
         setStep('configure');
+        hasHydratedEdit.current = true;
       }
     }
   }, [editWorkoutId, workouts]);
@@ -184,13 +189,12 @@ export default function CreateWorkout() {
     if (!name.trim() || selectedExercises.length === 0) return;
 
     if (isEditMode && editWorkoutId) {
-      // Edit mode: delete old, add updated
-      deleteWorkout(editWorkoutId);
-      addWorkout({
+      const existingWorkout = workouts.find((w) => w.id === editWorkoutId);
+      updateWorkout(editWorkoutId, {
         id: editWorkoutId,
         name: name.trim(),
         exercises: selectedExercises,
-        createdAt: workouts.find((w) => w.id === editWorkoutId)?.createdAt || new Date(),
+        createdAt: existingWorkout?.createdAt || new Date(),
       });
       toast({
         title: 'Workout updated!',
