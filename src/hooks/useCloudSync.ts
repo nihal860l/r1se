@@ -348,5 +348,6 @@ export function useCloudSync() {
     syncDeleteWorkout,
     syncDeleteExercise,
     syncDeleteHistory,
+    pushWorkoutUpdate: pushWorkout, // updateWorkout uses same upsert logic
   };
 }

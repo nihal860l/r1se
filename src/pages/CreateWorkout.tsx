@@ -349,7 +349,7 @@ export default function CreateWorkout() {
         {/* Step: Configure */}
         {step === 'configure' && (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pb-24">
               <div className="space-y-6 pb-4">
                 {selectedExercises.map((we) => {
                   const exercise = allExercises.find((e) => e.id === we.exerciseId);
@@ -417,10 +417,13 @@ export default function CreateWorkout() {
                 </Button>
               </div>
             </div>
-            <div className="py-4 border-t">
-              <Button onClick={handleSave} className="w-full h-12 text-base">
-                {isEditMode ? 'Save Changes' : 'Create Workout'}
-              </Button>
+            {/* Sticky bottom save bar */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+              <div className="container max-w-lg mx-auto">
+                <Button onClick={handleSave} className="w-full h-12 text-base">
+                  {isEditMode ? 'Save Changes' : 'Create Workout'}
+                </Button>
+              </div>
             </div>
           </div>
         )}
