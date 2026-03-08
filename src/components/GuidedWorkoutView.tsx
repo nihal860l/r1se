@@ -549,8 +549,8 @@ export function GuidedWorkoutView({
       <div className="w-full max-w-xs mt-auto pb-6 space-y-3">
         <Button onClick={handleFinishSet} glow className="w-full h-14 text-lg">
           {isChallenge
-            ? (challengeAccumulated + reps >= challengeTarget ? '🏆 Complete Challenge' : '✅ Log & Rest')
-            : (currentSetIndex >= totalSets - 1 ? '🏁 Finish Last Set' : '✅ Done — Rest')
+            ? (challengeAccumulated + reps >= challengeTarget ? 'Complete Challenge' : 'Log & Rest')
+            : (currentSetIndex >= totalSets - 1 ? 'Finish Last Set' : 'Done — Rest')
           }
         </Button>
         <div className="flex gap-2">

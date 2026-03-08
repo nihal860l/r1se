@@ -473,7 +473,7 @@ export default function ActiveWorkout() {
               onClick={() => handleSelectMode('classic')}
               className="w-full h-14 text-base text-foreground"
             >
-              📋 Classic Mode
+              Classic Mode
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
               See all exercises at once, log freely

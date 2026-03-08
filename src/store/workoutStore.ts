@@ -90,8 +90,13 @@ export const useWorkoutStore = create<WorkoutState>()(
       },
       addWorkoutLog: (log) => {
         set((state) => ({ workoutLogs: [log, ...state.workoutLogs] }));
-        // Trigger sync callback
         get().onHistoryAdded?.(log);
+      },
+      updateWorkoutLog: (id, log) => {
+        set((state) => ({
+          workoutLogs: state.workoutLogs.map((l) => l.id === id ? log : l),
+        }));
+        get().onHistoryUpdated?.(log);
       },
       deleteWorkoutLog: (id) => {
         set((state) => ({
