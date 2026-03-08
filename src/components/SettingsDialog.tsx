@@ -98,6 +98,18 @@ export function SettingsDialog() {
               </div>
             )}
 
+            {/* Glow Toggle */}
+            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Glow Effects</p>
+                  <p className="text-xs text-muted-foreground">Neon glow on UI elements</p>
+                </div>
+              </div>
+              <Switch checked={glowEnabled} onCheckedChange={setGlowEnabled} />
+            </div>
+
             {/* Reset Options */}
             <div className="space-y-2">
               <Button
