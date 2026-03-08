@@ -85,7 +85,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
                           : 'text-muted-foreground hover:text-foreground'
                       )}
                     >
-                      <Icon className={cn('w-5 h-5', isActive && 'glow')} />
+                      <Icon className={cn('w-5 h-5', isActive && glowEnabled && 'glow')} />
                       <span className="text-xs font-medium">{label}</span>
                     </NavLink>
                   );
