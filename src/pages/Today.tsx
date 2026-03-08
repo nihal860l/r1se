@@ -89,6 +89,7 @@ const Today = () => {
   const handleRestart = () => {
     if (session) {
       clearSession();
+      clearCloudSession();
       navigate(`/workout/${session.workoutId}`);
     } else if (workout) {
       navigate(`/workout/${workout.id}`);
