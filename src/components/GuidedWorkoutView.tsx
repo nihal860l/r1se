@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target } from 'lucide-react';
+import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
