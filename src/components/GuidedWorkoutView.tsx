@@ -20,6 +20,17 @@ interface GuidedWorkoutViewProps {
     sets: CompletedSet[];
   }[], duration: number) => void;
   onCancel: () => void;
+  onPause?: (guidedState: any) => void;
+  resumeState?: {
+    currentSetIndex: number;
+    phase: 'perform' | 'rest';
+    reps: number;
+    restSeconds: number;
+    challengeAccumulated: number;
+    challengeAttempt: number;
+    completedSets: Record<string, any[]>;
+  };
+  resumeElapsed?: number;
 }
 
 type Phase = 'perform' | 'rest' | 'complete';
