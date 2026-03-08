@@ -172,6 +172,7 @@ export function GuidedWorkoutView({
             reps,
             weight: currentSet.weight,
             setType: 'challenge',
+            intensity: currentSet.intensity,
           },
         ],
       }));
@@ -364,12 +365,12 @@ export function GuidedWorkoutView({
 
         {/* Adjust rest */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={() => setRestSeconds((prev) => Math.max(0, prev - 15))}>
-            <Minus className="w-4 h-4" />
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full text-foreground border-border" onClick={() => setRestSeconds((prev) => Math.max(0, prev - 15))}>
+            <Minus className="w-5 h-5" />
           </Button>
-          <span className="text-sm text-muted-foreground w-10 text-center tabular-nums font-mono">{restDone ? '0s' : `${restSeconds}s`}</span>
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={() => setRestSeconds((prev) => prev + 15)}>
-            <Plus className="w-4 h-4" />
+          <span className="text-sm text-foreground w-10 text-center tabular-nums font-mono">{restDone ? '0s' : `${restSeconds}s`}</span>
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full text-foreground border-border" onClick={() => setRestSeconds((prev) => prev + 15)}>
+            <Plus className="w-5 h-5" />
           </Button>
         </div>
 
@@ -404,7 +405,7 @@ export function GuidedWorkoutView({
           <ChevronRight className="w-5 h-5 ml-1" />
         </Button>
         {onPause && (
-          <Button variant="ghost" className="w-full max-w-xs text-muted-foreground" onClick={() => onPause({
+          <Button variant="outline" className="w-full max-w-xs text-foreground border-border" onClick={() => onPause({
             currentSetIndex,
             phase: 'rest',
             reps,
@@ -518,12 +519,12 @@ export function GuidedWorkoutView({
           }
         </Button>
         <div className="flex gap-2">
-          <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={handleSkipSet}>
+          <Button variant="outline" className="flex-1 text-foreground border-border" onClick={handleSkipSet}>
             <SkipForward className="w-4 h-4 mr-1" />
             Skip
           </Button>
           {onPause && (
-            <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={() => onPause({
+            <Button variant="outline" className="flex-1 text-foreground border-border" onClick={() => onPause({
               currentSetIndex,
               phase,
               reps,
@@ -536,7 +537,7 @@ export function GuidedWorkoutView({
               Pause
             </Button>
           )}
-          <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={onCancel}>
+          <Button variant="outline" className="flex-1 text-destructive border-destructive/30" onClick={onCancel}>
             <X className="w-4 h-4 mr-1" />
             Cancel
           </Button>
