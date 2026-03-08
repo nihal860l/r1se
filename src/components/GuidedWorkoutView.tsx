@@ -55,6 +55,9 @@ export function GuidedWorkoutView({
   allExercises,
   onComplete,
   onCancel,
+  onPause,
+  resumeState,
+  resumeElapsed,
 }: GuidedWorkoutViewProps) {
   const flatSets = useMemo<FlatSet[]>(() => {
     const sets: FlatSet[] = [];
