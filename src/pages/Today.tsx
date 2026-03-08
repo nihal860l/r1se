@@ -7,6 +7,7 @@ import { Play, Calendar, BedDouble, Dumbbell, Eye, RotateCcw, PlayCircle, CheckC
 import { format, isToday } from 'date-fns';
 import { exercises } from '@/data/exercises';
 import { useActiveSession } from '@/hooks/useActiveSession';
+import { useCloudSession } from '@/hooks/useCloudSession';
 import {
   AlertDialog,
   AlertDialogAction,
