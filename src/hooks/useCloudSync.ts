@@ -30,7 +30,7 @@ export function useCloudSync() {
   const workouts = useWorkoutStore((state) => state.workouts);
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const customExercises = useWorkoutStore((state) => state.customExercises);
-  const workoutPlan = useWorkoutStore((state) => state.workoutPlan);
+  const workoutPlans = useWorkoutStore((state) => state.workoutPlans);
 
   // Helper: try cloud operation, fall back to queue
   const tryOrQueue = useCallback(async (
@@ -142,9 +142,19 @@ export function useCloudSync() {
       end_date: plan.endDate,
       weekly_assignments: plan.weeklyAssignments as unknown as Json,
       exceptions: plan.exceptions as unknown as Json,
+      is_active: plan.isActive ?? false,
     };
     await tryOrQueue('workout_plans', 'upsert', payload as Record<string, unknown>, async () => {
       const { error } = await supabase.from('workout_plans').upsert(payload, { onConflict: 'user_id,plan_id' });
+      if (error) throw error;
+    });
+  }, [user, tryOrQueue]);
+
+  const syncDeletePlan = useCallback(async (planId: string) => {
+    if (!user) return;
+    const payload = { user_id: user.id, plan_id: planId };
+    await tryOrQueue('workout_plans', 'delete', payload, async () => {
+      const { error } = await supabase.from('workout_plans').delete().eq('user_id', user.id).eq('plan_id', planId);
       if (error) throw error;
     });
   }, [user, tryOrQueue]);
@@ -157,14 +167,14 @@ export function useCloudSync() {
       for (const exercise of customExercises) await pushExercise(exercise);
       for (const workout of workouts) await pushWorkout(workout);
       for (const log of workoutLogs) await pushWorkoutLog(log);
-      if (workoutPlan) await pushWorkoutPlan(workoutPlan);
+      for (const plan of workoutPlans) await pushWorkoutPlan(plan);
       lastSyncTime.current = Date.now();
     } catch (error) {
       console.error('Upload to cloud failed:', error);
     } finally {
       syncInProgress.current = false;
     }
-  }, [user, customExercises, workouts, workoutLogs, workoutPlan, pushExercise, pushWorkout, pushWorkoutLog, pushWorkoutPlan]);
+  }, [user, customExercises, workouts, workoutLogs, workoutPlans, pushExercise, pushWorkout, pushWorkoutLog, pushWorkoutPlan]);
 
   // Download cloud data and replace local state (ONE-TIME on initial login)
   const hydrateFromCloud = useCallback(async () => {
@@ -206,17 +216,24 @@ export function useCloudSync() {
         useWorkoutStore.setState({ workoutLogs: historyData });
       }
 
-      const { data: cloudPlans } = await supabase.from('workout_plans').select('*').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(1);
+      // Load ALL plans (multi-plan support)
+      const { data: cloudPlans } = await supabase.from('workout_plans').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
       if (cloudPlans && cloudPlans.length > 0) {
-        const p = cloudPlans[0];
-        const planData: WorkoutPlan = {
+        const plansData: WorkoutPlan[] = cloudPlans.map((p) => ({
           id: p.id, planId: p.plan_id, name: p.name,
           startDate: p.start_date, endDate: p.end_date,
           weeklyAssignments: p.weekly_assignments as unknown as WeeklyAssignments,
           exceptions: (p.exceptions as unknown as PlanException[]) || [],
           createdAt: new Date(p.created_at), updatedAt: new Date(p.updated_at),
-        };
-        useWorkoutStore.setState({ workoutPlan: planData });
+          isActive: p.is_active ?? false,
+        }));
+        
+        // Find active plan or default to first
+        const activePlan = plansData.find((p) => p.isActive) || plansData[0];
+        useWorkoutStore.setState({ 
+          workoutPlans: plansData,
+          activePlanId: activePlan?.planId || null,
+        });
       }
 
       hasHydrated.current = true;
@@ -259,7 +276,7 @@ export function useCloudSync() {
 
   return {
     pushWorkout, pushExercise, pushWorkoutLog, pushWorkoutPlan,
-    syncDeleteWorkout, syncDeleteExercise, syncDeleteHistory,
+    syncDeleteWorkout, syncDeleteExercise, syncDeleteHistory, syncDeletePlan,
     pushWorkoutUpdate: pushWorkout,
   };
 }
