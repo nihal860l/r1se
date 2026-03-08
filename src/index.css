@@ -75,8 +75,14 @@
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 80%;
-    --input: 0 0% 80%;
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+
+    /* Button system tokens */
+    --btn-success: 142 60% 40%;
+    --btn-success-foreground: 0 0% 100%;
+    --btn-danger: 0 62% 50%;
+    --btn-danger-foreground: 0 0% 100%;
     --ring: 142 76% 46%;
 
     --sidebar-background: 0 0% 6%;
@@ -92,6 +98,34 @@
     --icon-default: 0 0% 95%;
     --icon-muted: 0 0% 55%;
   }
+}
+
+/* Neon glow keyframes */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px hsl(142 76% 46% / 0.3); }
+  50% { box-shadow: 0 0 20px hsl(142 76% 46% / 0.5), 0 0 40px hsl(142 76% 46% / 0.15); }
+}
+
+@keyframes check-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ring-fill {
+  from { stroke-dashoffset: var(--ring-circumference); }
+  to { stroke-dashoffset: var(--ring-offset); }
+}
+
+@keyframes rest-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes completion-burst {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @layer base {
