@@ -177,7 +177,27 @@ export default function CreateWorkout() {
           ? {
               ...e,
               sets: e.sets.map((s, i) =>
-                i === setIndex ? { ...s, setType } : s
+                i === setIndex ? { 
+                  ...s, 
+                  setType,
+                  ...(setType === 'challenge' ? { targetReps: s.targetReps || 30, intensity: undefined } : {}),
+                } : s
+              ),
+            }
+          : e
+      )
+    );
+  };
+
+  const updateSetTargetReps = (exerciseId: string, setIndex: number, targetReps: number) => {
+    saveSnapshot();
+    setSelectedExercises((prev) =>
+      prev.map((e) =>
+        e.exerciseId === exerciseId
+          ? {
+              ...e,
+              sets: e.sets.map((s, i) =>
+                i === setIndex ? { ...s, targetReps } : s
               ),
             }
           : e
