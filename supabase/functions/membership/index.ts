@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -13,39 +13,45 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const anonKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    // Authenticate via getClaims
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Verify the user's JWT
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await createClient(
-      supabaseUrl,
-      Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!
-    ).auth.getUser(token);
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
-    if (authError || !user) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { action } = await req.json();
+    const userId = claimsData.claims.sub as string;
+
+    // Service role client for privileged operations
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Parse body once
+    const body = await req.json().catch(() => ({}));
+    const { action } = body;
 
     if (action === 'check') {
-      // Check membership status
-      const { data, error } = await supabase
+      const { data, error } = await adminClient
         .from('memberships')
         .select('tier, is_active, expires_at')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
 
       if (error) throw error;
@@ -54,25 +60,26 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         tier: data?.tier || 'free',
-        is_active: data?.is_active && !isExpired,
-        expires_at: data?.expires_at,
+        is_active: (data?.is_active ?? false) && !isExpired,
+        expires_at: data?.expires_at || null,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (action === 'activate') {
-      // Server-only: activate premium (called by payment webhook later)
-      // For now, this is a placeholder that requires service role
-      const { tier, expires_at } = await req.json().catch(() => ({}));
-      
-      const { error } = await supabase
+      // Server-controlled activation — ready for future payment webhook integration
+      // Only service role can write to memberships table (no INSERT/UPDATE RLS for users)
+      const tier = body.tier || 'premium';
+      const expires_at = body.expires_at || null;
+
+      const { error } = await adminClient
         .from('memberships')
         .upsert({
-          user_id: user.id,
-          tier: tier || 'premium',
+          user_id: userId,
+          tier,
           is_active: true,
-          expires_at: expires_at || null,
+          expires_at,
         }, { onConflict: 'user_id' });
 
       if (error) throw error;
@@ -82,7 +89,20 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
+    if (action === 'deactivate') {
+      const { error } = await adminClient
+        .from('memberships')
+        .update({ is_active: false })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid action. Use: check, activate, deactivate' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
