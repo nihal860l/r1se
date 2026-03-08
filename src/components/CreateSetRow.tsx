@@ -112,6 +112,14 @@ export const CreateSetRow = memo(function CreateSetRow({
             </Button>
           </div>
         </div>
+
+        {/* Intensity row */}
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground px-1">Intensity</label>
+          <Button variant="outline" size="sm" className="w-full h-9 text-sm text-foreground justify-center" onClick={onOpenIntensityPicker}>
+            {intensity ? INTENSITY_LABELS[intensity] : '2 RIR'}
+          </Button>
+        </div>
       </div>
     );
   }
