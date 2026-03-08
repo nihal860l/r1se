@@ -172,6 +172,7 @@ export function GuidedWorkoutView({
             reps,
             weight: currentSet.weight,
             setType: 'challenge',
+            intensity: currentSet.intensity,
           },
         ],
       }));
