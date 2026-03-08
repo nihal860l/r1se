@@ -166,7 +166,7 @@ const Progress = () => {
             className="w-full justify-between"
             onClick={() => setShowPicker(!showPicker)}
           >
-            <span className="text-muted-foreground">
+            <span className="text-foreground">
               {selectedExerciseIds.length === 0
                 ? 'Select exercises to track...'
                 : `${selectedExerciseIds.length} exercise${selectedExerciseIds.length > 1 ? 's' : ''} selected`}
