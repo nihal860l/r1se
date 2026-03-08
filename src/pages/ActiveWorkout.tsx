@@ -373,16 +373,23 @@ export default function ActiveWorkout() {
   }, [workout, addWorkoutLog, toast, navigate, clearSession]);
 
   // Guided mode pause handler
-  const handleGuidedPause = useCallback((guidedState: any) => {
+  const handleGuidedPause = useCallback(async (guidedState: any) => {
     pauseSession({
       guidedState,
     });
-    toast({
-      title: 'Workout paused',
-      description: 'You can resume from the home screen.',
-    });
-    navigate('/');
-  }, [pauseSession, toast, navigate]);
+    // Save to cloud after local state is updated
+    setTimeout(async () => {
+      const currentSession = JSON.parse(localStorage.getItem('active-workout-session') || 'null');
+      if (currentSession) {
+        await saveSessionToCloud(currentSession);
+      }
+      toast({
+        title: 'Workout paused',
+        description: 'Progress saved to cloud. Resume from the home screen.',
+      });
+      navigate('/');
+    }, 50);
+  }, [pauseSession, toast, navigate, saveSessionToCloud]);
 
   const handleCancel = () => {
     if (mode === 'choose') {
