@@ -41,14 +41,14 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
         <header 
           className={cn(
             "fixed top-0 left-0 right-0 z-50 transition-colors duration-200",
-            isOverlayOpen ? "bg-white" : "bg-background"
+            isOverlayOpen ? "bg-popover" : "bg-background"
           )}
         >
           <div className="container max-w-lg mx-auto py-4 px-4 flex items-center justify-between">
             <h1 
               className={cn(
                 "text-2xl font-black tracking-tight transition-colors duration-200",
-                isOverlayOpen ? "text-black" : "text-primary"
+                isOverlayOpen ? "text-foreground" : "text-primary"
               )}
             >
               R1SE

@@ -10,7 +10,7 @@ export interface Exercise {
   isCustom?: boolean;
 }
 
-export type SetType = 'normal' | 'superset' | 'alternating';
+export type SetType = 'normal' | 'superset' | 'alternating' | 'challenge';
 
 export type IntensityLevel = 'warmup' | '2rir' | '1rir' | 'failure';
 
@@ -19,6 +19,7 @@ export interface WorkoutSet {
   reps?: number;
   setType?: SetType;
   intensity?: IntensityLevel;
+  targetReps?: number; // For challenge sets: total reps to accumulate
 }
 
 export interface WorkoutExercise {
@@ -57,12 +58,14 @@ export const SET_TYPE_LABELS: Record<SetType, string> = {
   normal: 'Normal',
   superset: 'Super Set',
   alternating: 'Alt Super Set',
+  challenge: 'Challenge Set',
 };
 
 export const SET_TYPE_SHORT_LABELS: Record<SetType, string> = {
   normal: 'Normal',
   superset: 'S',
   alternating: 'A',
+  challenge: 'C',
 };
 
 export const INTENSITY_LABELS: Record<IntensityLevel, string> = {

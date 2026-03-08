@@ -44,12 +44,14 @@ interface SetLog {
   intensity: IntensityLevel | null;
   setType: SetType;
   completed: boolean;
+  targetReps?: number;
+  challengeAccumulatedReps?: number;
 }
 
 // Generate reps options 0-100
 const REPS_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
-const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
+const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating', 'challenge'];
 
 export default function ActiveWorkout() {
   const navigate = useNavigate();
@@ -96,6 +98,8 @@ export default function ActiveWorkout() {
           intensity: set.intensity || null,
           setType: set.setType || 'normal',
           completed: false,
+          targetReps: set.targetReps,
+          challengeAccumulatedReps: 0,
         }));
       });
       setExerciseLogs(logs);
@@ -134,6 +138,25 @@ export default function ActiveWorkout() {
 
   const toggleSetComplete = (exerciseId: string, setIndex: number) => {
     const currentSet = exerciseLogs[exerciseId][setIndex];
+    
+    // For challenge sets, accumulate reps on complete
+    if (currentSet.setType === 'challenge' && !currentSet.completed) {
+      const repsToAdd = currentSet.reps || 0;
+      const newAccumulated = (currentSet.challengeAccumulatedReps || 0) + repsToAdd;
+      const target = currentSet.targetReps || 30;
+      const challengeComplete = newAccumulated >= target;
+      
+      setExerciseLogs((prev) => ({
+        ...prev,
+        [exerciseId]: prev[exerciseId].map((set, i) =>
+          i === setIndex 
+            ? { ...set, challengeAccumulatedReps: newAccumulated, completed: challengeComplete, reps: null }
+            : set
+        ),
+      }));
+      return;
+    }
+    
     updateSetLog(exerciseId, setIndex, 'completed', !currentSet.completed);
   };
 
@@ -446,6 +469,8 @@ export default function ActiveWorkout() {
                         completed={set.completed}
                         isEditMode={isEditMode}
                         isOnlySet={sets.length === 1}
+                        targetReps={set.targetReps}
+                        challengeAccumulatedReps={set.challengeAccumulatedReps}
                         onWeightChange={(weight) => updateSetLog(we.exerciseId, i, 'weight', weight)}
                         onOpenRepsPicker={() => setRepsPicker({ exerciseId: we.exerciseId, setIndex: i })}
                         onOpenIntensityPicker={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex: i })}
