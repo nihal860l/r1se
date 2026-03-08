@@ -182,6 +182,7 @@ export type Database = {
           end_date: string | null
           exceptions: Json
           id: string
+          is_active: boolean
           name: string
           plan_id: string
           start_date: string
@@ -194,6 +195,7 @@ export type Database = {
           end_date?: string | null
           exceptions?: Json
           id?: string
+          is_active?: boolean
           name?: string
           plan_id: string
           start_date?: string
@@ -206,6 +208,7 @@ export type Database = {
           end_date?: string | null
           exceptions?: Json
           id?: string
+          is_active?: boolean
           name?: string
           plan_id?: string
           start_date?: string
