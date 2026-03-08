@@ -340,7 +340,7 @@ export default function ActiveWorkout() {
     clearCloudSession();
 
     toast({
-      title: 'Workout complete! 💪',
+      title: 'Workout complete',
       description: `${workout.name} logged in ${formatTime(elapsed)}.`,
     });
 
@@ -367,7 +367,7 @@ export default function ActiveWorkout() {
     clearCloudSession();
 
     toast({
-      title: 'Workout complete! 💪',
+      title: 'Workout complete',
       description: `${workout.name} has been saved to your history.`,
     });
 
@@ -462,7 +462,7 @@ export default function ActiveWorkout() {
               onClick={() => handleSelectMode('guided')}
               className="w-full h-14 text-base"
             >
-              🎯 Guided Mode
+              Guided Mode
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
               Step-by-step through each set with rest timers
@@ -473,7 +473,7 @@ export default function ActiveWorkout() {
               onClick={() => handleSelectMode('classic')}
               className="w-full h-14 text-base text-foreground"
             >
-              📋 Classic Mode
+              Classic Mode
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
               See all exercises at once, log freely

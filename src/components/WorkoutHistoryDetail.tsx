@@ -2,7 +2,7 @@ import { WorkoutLog, INTENSITY_LABELS, SET_TYPE_LABELS } from '@/types/workout';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dumbbell, Clock, Calendar, Trash2 } from 'lucide-react';
+import { Dumbbell, Clock, Calendar, Trash2, Pencil } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,16 +20,19 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
+import { EditHistoryDialog } from './EditHistoryDialog';
 
 interface WorkoutHistoryDetailProps {
   log: WorkoutLog | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit: (log: WorkoutLog) => void;
 }
 
-export function WorkoutHistoryDetail({ log, open, onOpenChange, onDelete }: WorkoutHistoryDetailProps) {
+export function WorkoutHistoryDetail({ log, open, onOpenChange, onDelete, onEdit }: WorkoutHistoryDetailProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   if (!log) return null;
 
@@ -44,6 +47,11 @@ export function WorkoutHistoryDetail({ log, open, onOpenChange, onDelete }: Work
     onOpenChange(false);
   };
 
+  const handleSaveEdit = (updatedLog: WorkoutLog) => {
+    onEdit(updatedLog);
+    setShowEdit(false);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,14 +59,24 @@ export function WorkoutHistoryDetail({ log, open, onOpenChange, onDelete }: Work
           <DialogHeader>
             <div className="flex items-center justify-between pr-8">
               <DialogTitle className="text-xl">{log.workoutName}</DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  onClick={() => { onOpenChange(false); setShowEdit(true); }}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
@@ -97,7 +115,6 @@ export function WorkoutHistoryDetail({ log, open, onOpenChange, onDelete }: Work
                   <span className="text-sm font-semibold text-foreground">{exercise.exerciseName}</span>
                 </div>
                 
-                {/* Sets Header */}
                 <div className="pl-6">
                   <div className="grid grid-cols-[40px_1fr_1fr_1fr] gap-1 text-xs text-muted-foreground mb-1">
                     <span>Set</span>
@@ -130,6 +147,13 @@ export function WorkoutHistoryDetail({ log, open, onOpenChange, onDelete }: Work
           </div>
         </DialogContent>
       </Dialog>
+
+      <EditHistoryDialog
+        log={log}
+        open={showEdit}
+        onOpenChange={setShowEdit}
+        onSave={handleSaveEdit}
+      />
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>

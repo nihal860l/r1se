@@ -236,7 +236,7 @@ export function ActiveWorkoutSheet({ workout, open, onClose }: ActiveWorkoutShee
     });
 
     toast({
-      title: 'Workout complete! 💪',
+      title: 'Workout complete',
       description: `${workout.name} logged in ${formatTime(elapsed)}.`,
     });
 

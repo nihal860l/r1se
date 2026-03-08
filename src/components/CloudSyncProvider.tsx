@@ -28,6 +28,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
         onExerciseAdded: pushExercise,
         onExerciseDeleted: syncDeleteExercise,
         onHistoryAdded: pushWorkoutLog,
+        onHistoryUpdated: pushWorkoutLog, // reuse upsert
         onHistoryDeleted: syncDeleteHistory,
       });
     }

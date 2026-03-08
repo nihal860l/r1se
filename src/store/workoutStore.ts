@@ -19,6 +19,7 @@ interface WorkoutState {
   onWorkoutUpdated?: (workout: Workout) => void;
   onExerciseAdded?: (exercise: Exercise) => void;
   onHistoryAdded?: (log: WorkoutLog) => void;
+  onHistoryUpdated?: (log: WorkoutLog) => void;
   onPlanUpdated?: (plan: WorkoutPlan) => void;
   
   // Actions
@@ -26,6 +27,7 @@ interface WorkoutState {
   updateWorkout: (id: string, workout: Workout) => void;
   deleteWorkout: (id: string) => void;
   addWorkoutLog: (log: WorkoutLog) => void;
+  updateWorkoutLog: (id: string, log: WorkoutLog) => void;
   deleteWorkoutLog: (id: string) => void;
   addCustomExercise: (exercise: Exercise) => void;
   deleteCustomExercise: (id: string) => void;
@@ -45,6 +47,7 @@ interface WorkoutState {
     onWorkoutUpdated?: (workout: Workout) => void;
     onExerciseAdded?: (exercise: Exercise) => void;
     onHistoryAdded?: (log: WorkoutLog) => void;
+    onHistoryUpdated?: (log: WorkoutLog) => void;
     onPlanUpdated?: (plan: WorkoutPlan) => void;
   }) => void;
 }
@@ -66,6 +69,7 @@ export const useWorkoutStore = create<WorkoutState>()(
       onWorkoutAdded: undefined,
       onExerciseAdded: undefined,
       onHistoryAdded: undefined,
+      onHistoryUpdated: undefined,
       onPlanUpdated: undefined,
       
       addWorkout: (workout) => {
@@ -86,8 +90,13 @@ export const useWorkoutStore = create<WorkoutState>()(
       },
       addWorkoutLog: (log) => {
         set((state) => ({ workoutLogs: [log, ...state.workoutLogs] }));
-        // Trigger sync callback
         get().onHistoryAdded?.(log);
+      },
+      updateWorkoutLog: (id, log) => {
+        set((state) => ({
+          workoutLogs: state.workoutLogs.map((l) => l.id === id ? log : l),
+        }));
+        get().onHistoryUpdated?.(log);
       },
       deleteWorkoutLog: (id) => {
         set((state) => ({

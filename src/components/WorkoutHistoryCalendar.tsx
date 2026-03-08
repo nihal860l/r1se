@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Dumbbell, Clock } from 'lucide-react';
 import { WorkoutHistoryDetail } from './WorkoutHistoryDetail';
+import { useWorkoutStore } from '@/store/workoutStore';
 
 interface WorkoutHistoryCalendarProps {
   workoutLogs: WorkoutLog[];
@@ -15,6 +16,7 @@ interface WorkoutHistoryCalendarProps {
 export function WorkoutHistoryCalendar({ workoutLogs, onDelete }: WorkoutHistoryCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedLog, setSelectedLog] = useState<WorkoutLog | null>(null);
+  const updateWorkoutLog = useWorkoutStore((state) => state.updateWorkoutLog);
 
   const daysInMonth = useMemo(() => {
     const start = startOfMonth(currentMonth);
@@ -138,6 +140,7 @@ export function WorkoutHistoryCalendar({ workoutLogs, onDelete }: WorkoutHistory
         open={selectedLog !== null}
         onOpenChange={(open) => !open && setSelectedLog(null)}
         onDelete={onDelete}
+        onEdit={(log) => { updateWorkoutLog(log.id, log); setSelectedLog(null); }}
       />
     </div>
   );

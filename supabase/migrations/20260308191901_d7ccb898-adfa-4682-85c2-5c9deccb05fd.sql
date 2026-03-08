@@ -1,0 +1,1 @@
+CREATE POLICY "Users can update their own history" ON public.workout_history FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

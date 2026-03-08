@@ -25,6 +25,7 @@ import { WorkoutLog } from '@/types/workout';
 const History = () => {
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const deleteWorkoutLog = useWorkoutStore((state) => state.deleteWorkoutLog);
+  const updateWorkoutLog = useWorkoutStore((state) => state.updateWorkoutLog);
   const { toast } = useToast();
   
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -139,6 +140,7 @@ const History = () => {
         open={selectedLog !== null}
         onOpenChange={(open) => !open && setSelectedLog(null)}
         onDelete={handleDelete}
+        onEdit={(log) => { updateWorkoutLog(log.id, log); setSelectedLog(null); }}
       />
 
       {/* Delete Confirmation Dialog */}

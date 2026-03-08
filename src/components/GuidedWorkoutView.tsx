@@ -350,8 +350,8 @@ export function GuidedWorkoutView({
         <Progress value={progress} className="w-full max-w-xs h-2" />
         <p className="text-sm text-muted-foreground font-medium">
           {isChallengeInProgress
-            ? `✓ Attempt ${challengeAttempt - 1} done — ${challengeAccumulated} / ${currentSet.targetReps || 30} reps`
-            : `✓ Set ${currentSetIndex + 1} of ${totalSets} done`
+            ? `Attempt ${challengeAttempt - 1} done — ${challengeAccumulated} / ${currentSet.targetReps || 30} reps`
+            : `Set ${currentSetIndex + 1} of ${totalSets} done`
           }
         </p>
 
@@ -549,8 +549,8 @@ export function GuidedWorkoutView({
       <div className="w-full max-w-xs mt-auto pb-6 space-y-3">
         <Button onClick={handleFinishSet} glow className="w-full h-14 text-lg">
           {isChallenge
-            ? (challengeAccumulated + reps >= challengeTarget ? '🏆 Complete Challenge' : '✅ Log & Rest')
-            : (currentSetIndex >= totalSets - 1 ? '🏁 Finish Last Set' : '✅ Done — Rest')
+            ? (challengeAccumulated + reps >= challengeTarget ? 'Complete Challenge' : 'Log & Rest')
+            : (currentSetIndex >= totalSets - 1 ? 'Finish Last Set' : 'Done — Rest')
           }
         </Button>
         <div className="flex gap-2">
