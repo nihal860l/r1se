@@ -36,6 +36,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
   const location = useLocation();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const { user } = useAuth();
+  const glowEnabled = useGlowStore((s) => s.glowEnabled);
 
   return (
     <HeaderContext.Provider value={{ isOverlayOpen, setIsOverlayOpen }}>
