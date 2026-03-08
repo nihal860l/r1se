@@ -743,22 +743,7 @@ export default function ActiveWorkout() {
       />
 
       {/* Cancel Confirmation Dialog */}
-      <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your progress will not be saved. Are you sure you want to cancel this workout?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Continue Workout</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Cancel Workout
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {cancelDialog}
     </Layout>
   );
 }
