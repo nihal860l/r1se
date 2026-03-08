@@ -28,6 +28,7 @@ export const useHeaderContext = () => useContext(HeaderContext);
 const navItems = [
   { to: '/', icon: Calendar, label: 'Today' },
   { to: '/plan', icon: ClipboardList, label: 'Plan' },
+  { to: '/progress', icon: TrendingUp, label: 'Progress' },
   { to: '/history', icon: History, label: 'History' },
 ];
 

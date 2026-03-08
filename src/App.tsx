@@ -28,6 +28,7 @@ const AuthenticatedRoutes = () => (
     <Route path="/workouts" element={<Workouts />} />
     <Route path="/workout-plan" element={<WorkoutPlan />} />
     <Route path="/exercises" element={<Exercises />} />
+    <Route path="/progress" element={<Progress />} />
     <Route path="/history" element={<History />} />
     <Route path="/create-workout" element={<CreateWorkout />} />
     <Route path="/workout/:workoutId" element={<ActiveWorkout />} />
