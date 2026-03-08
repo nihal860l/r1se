@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Search, Trash2, ArrowLeft, ChevronRight, X } from 'lucide-react';
+import { Plus, Search, Trash2, ArrowLeft, ChevronRight, X, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,7 @@ import { Layout } from '@/components/Layout';
 import { PickerDialog } from '@/components/PickerDialog';
 import { CreateSetRow } from '@/components/CreateSetRow';
 import { InlineCreateExerciseDialog } from '@/components/InlineCreateExerciseDialog';
+import { useUndoHistory } from '@/hooks/useUndoHistory';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,11 @@ import {
 
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
+
+interface EditorSnapshot {
+  name: string;
+  selectedExercises: WorkoutExercise[];
+}
 
 export default function CreateWorkout() {
   const navigate = useNavigate();
@@ -56,10 +62,25 @@ export default function CreateWorkout() {
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
 
+  // Undo system
+  const { canUndo, pushState, undo } = useUndoHistory<EditorSnapshot>();
+
+  const saveSnapshot = useCallback(() => {
+    pushState({ name, selectedExercises });
+  }, [name, selectedExercises, pushState]);
+
+  const handleUndo = useCallback(() => {
+    const prev = undo();
+    if (prev) {
+      setName(prev.name);
+      setSelectedExercises(prev.selectedExercises);
+      toast({ title: 'Undone', description: 'Reverted to previous state.' });
+    }
+  }, [undo, toast]);
+
   // Guard: only hydrate from existing workout ONCE
   const hasHydratedEdit = useRef(false);
 
-  // Load existing workout data in edit mode (re-run when workouts hydrate from storage)
   useEffect(() => {
     if (hasHydratedEdit.current) return;
     if (editWorkoutId && workouts.length > 0) {
@@ -87,10 +108,10 @@ export default function CreateWorkout() {
   };
 
   const allExercises = [...exercises, ...customExercises];
-  
   const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
   const toggleExercise = (exerciseId: string) => {
+    saveSnapshot();
     setSelectedExercises((prev) => {
       const exists = prev.find((e) => e.exerciseId === exerciseId);
       if (exists) {
@@ -104,6 +125,7 @@ export default function CreateWorkout() {
   };
 
   const addSet = (exerciseId: string) => {
+    saveSnapshot();
     setSelectedExercises((prev) =>
       prev.map((e) => {
         if (e.exerciseId !== exerciseId) return e;
@@ -121,6 +143,7 @@ export default function CreateWorkout() {
   };
 
   const removeSet = (exerciseId: string, setIndex: number) => {
+    saveSnapshot();
     setSelectedExercises((prev) =>
       prev.map((e) =>
         e.exerciseId === exerciseId
@@ -131,6 +154,7 @@ export default function CreateWorkout() {
   };
 
   const updateSetWeight = (exerciseId: string, setIndex: number, weight: number) => {
+    saveSnapshot();
     setSelectedExercises((prev) =>
       prev.map((e) =>
         e.exerciseId === exerciseId
@@ -146,6 +170,7 @@ export default function CreateWorkout() {
   };
 
   const updateSetType = (exerciseId: string, setIndex: number, setType: SetType) => {
+    saveSnapshot();
     setSelectedExercises((prev) =>
       prev.map((e) =>
         e.exerciseId === exerciseId
@@ -161,6 +186,7 @@ export default function CreateWorkout() {
   };
 
   const updateSetIntensity = (exerciseId: string, setIndex: number, intensity: IntensityLevel) => {
+    saveSnapshot();
     setSelectedExercises((prev) =>
       prev.map((e) =>
         e.exerciseId === exerciseId
@@ -176,6 +202,7 @@ export default function CreateWorkout() {
   };
 
   const handleInlineExerciseCreated = (exerciseId: string) => {
+    saveSnapshot();
     setSelectedExercises((prev) => [
       ...prev,
       {
@@ -255,14 +282,27 @@ export default function CreateWorkout() {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCancel}
-            className="text-foreground"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Undo button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="text-foreground disabled:opacity-30"
+              title="Undo"
+            >
+              <Undo2 className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleCancel}
+              className="text-foreground"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Step: Name */}
@@ -472,13 +512,13 @@ export default function CreateWorkout() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel {isEditMode ? 'Editing' : 'Workout Creation'}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to cancel? All unsaved changes will be lost.
+              Your changes will be lost. Are you sure you want to go back?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep Editing</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCancel}>
-              Discard & Exit
+            <AlertDialogAction onClick={confirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Discard Changes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

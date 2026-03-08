@@ -25,6 +25,7 @@ import { ExerciseCard } from '@/components/ExerciseCard';
 import { Layout } from '@/components/Layout';
 import { PickerDialog } from '@/components/PickerDialog';
 import { SetRow } from '@/components/SetRow';
+import { GuidedWorkoutView } from '@/components/GuidedWorkoutView';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,10 +46,8 @@ interface SetLog {
   completed: boolean;
 }
 
-// Generate reps options 0-100 (no looping)
+// Generate reps options 0-100
 const REPS_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
-
-// Intensity and set type options (no dropset)
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
 
@@ -64,6 +63,9 @@ export default function ActiveWorkout() {
   const workout = workouts.find((w) => w.id === workoutId);
   const allExercises = [...exercises, ...customExercises];
 
+  // Mode: 'guided' or 'classic'
+  const [mode, setMode] = useState<'choose' | 'guided' | 'classic'>('choose');
+
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, SetLog[]>>({});
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -73,7 +75,6 @@ export default function ActiveWorkout() {
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   
-  // Picker state
   const [repsPicker, setRepsPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
@@ -81,9 +82,9 @@ export default function ActiveWorkout() {
 
   const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
-  // Initialize workout
+  // Initialize workout for classic mode
   useEffect(() => {
-    if (workout) {
+    if (workout && mode === 'classic') {
       setStartTime(new Date());
       setWorkoutExercises([...workout.exercises]);
       
@@ -100,7 +101,7 @@ export default function ActiveWorkout() {
       setExerciseLogs(logs);
       setIsEditMode(false);
     }
-  }, [workout]);
+  }, [workout, mode]);
 
   // Timer
   useEffect(() => {
@@ -156,7 +157,6 @@ export default function ActiveWorkout() {
     setExerciseSearch('');
   };
 
-  // Handle inline exercise creation - auto-add to active workout
   const handleInlineExerciseCreated = (exerciseId: string) => {
     addExerciseToWorkout(exerciseId);
     setShowCreateExercise(false);
@@ -248,7 +248,35 @@ export default function ActiveWorkout() {
     navigate('/');
   };
 
+  // Guided mode completion handler
+  const handleGuidedComplete = useCallback((
+    completedExercises: { exerciseId: string; exerciseName: string; sets: CompletedSet[] }[],
+    duration: number
+  ) => {
+    if (!workout) return;
+
+    addWorkoutLog({
+      id: crypto.randomUUID(),
+      workoutId: workout.id,
+      workoutName: workout.name,
+      completedAt: new Date(),
+      duration,
+      exercises: completedExercises,
+    });
+
+    toast({
+      title: 'Workout complete! 💪',
+      description: `${workout.name} has been saved to your history.`,
+    });
+
+    navigate('/');
+  }, [workout, addWorkoutLog, toast, navigate]);
+
   const handleCancel = () => {
+    if (mode === 'choose') {
+      navigate('/');
+      return;
+    }
     setShowCancelConfirm(true);
   };
 
@@ -283,6 +311,65 @@ export default function ActiveWorkout() {
     );
   }
 
+  // ===== MODE CHOOSER =====
+  if (mode === 'choose') {
+    return (
+      <Layout hideNav>
+        <div className="container max-w-lg animate-fade-in px-4 flex flex-col items-center justify-center min-h-[calc(100vh-60px)] gap-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-foreground">{workout.name}</h2>
+            <p className="text-muted-foreground mt-1">How do you want to train?</p>
+          </div>
+
+          <div className="w-full max-w-xs space-y-3">
+            <Button
+              onClick={() => setMode('guided')}
+              className="w-full h-14 text-base"
+            >
+              🎯 Guided Mode
+            </Button>
+            <p className="text-xs text-muted-foreground text-center px-4">
+              Step-by-step through each set with rest timers
+            </p>
+
+            <Button
+              variant="outline"
+              onClick={() => setMode('classic')}
+              className="w-full h-14 text-base text-foreground"
+            >
+              📋 Classic Mode
+            </Button>
+            <p className="text-xs text-muted-foreground text-center px-4">
+              See all exercises at once, log freely
+            </p>
+          </div>
+
+          <Button variant="ghost" onClick={() => navigate('/')} className="text-muted-foreground mt-4">
+            Cancel
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // ===== GUIDED MODE =====
+  if (mode === 'guided') {
+    return (
+      <Layout hideNav>
+        <div className="container max-w-lg animate-fade-in px-4 flex flex-col min-h-[calc(100vh-60px)]">
+          <GuidedWorkoutView
+            workoutName={workout.name}
+            workoutExercises={workout.exercises}
+            allExercises={allExercises}
+            onComplete={handleGuidedComplete}
+            onCancel={handleCancel}
+          />
+        </div>
+      </Layout>
+    );
+  }
+
+  // ===== CLASSIC MODE =====
   return (
     <Layout hideNav>
       <div className="container max-w-lg animate-fade-in px-4 flex flex-col min-h-[calc(100vh-60px)]">
@@ -340,7 +427,6 @@ export default function ActiveWorkout() {
                     )}
                   </div>
                   <div className="space-y-2">
-                    {/* Header row */}
                     <div className="grid grid-cols-[48px_1fr_56px_64px_40px] gap-1 text-xs text-muted-foreground px-1">
                       <span className="text-center text-muted-foreground">Set</span>
                       <span className="text-muted-foreground">Weight</span>
@@ -482,7 +568,6 @@ export default function ActiveWorkout() {
                 </p>
               )}
               
-              {/* Create New Exercise Button */}
               <Button
                 variant="outline"
                 className="w-full mt-2 text-foreground"

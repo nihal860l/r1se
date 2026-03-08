@@ -1,22 +1,35 @@
-import { useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 
-export function useUndoHistory<T>(maxHistory = 50) {
-  const history = useRef<T[]>([]);
-  const canUndo = history.current.length > 0;
+interface UndoState<T> {
+  canUndo: boolean;
+  pushState: (state: T) => void;
+  undo: () => T | null;
+  clear: () => void;
+}
+
+export function useUndoHistory<T>(maxHistory = 50): UndoState<T> {
+  const historyRef = useRef<T[]>([]);
+  const [length, setLength] = useState(0);
 
   const pushState = useCallback((state: T) => {
-    history.current = [...history.current.slice(-(maxHistory - 1)), structuredClone(state)];
+    historyRef.current = [
+      ...historyRef.current.slice(-(maxHistory - 1)),
+      JSON.parse(JSON.stringify(state)),
+    ];
+    setLength(historyRef.current.length);
   }, [maxHistory]);
 
   const undo = useCallback((): T | null => {
-    if (history.current.length === 0) return null;
-    const previous = history.current.pop()!;
-    return structuredClone(previous);
+    if (historyRef.current.length === 0) return null;
+    const previous = historyRef.current.pop()!;
+    setLength(historyRef.current.length);
+    return JSON.parse(JSON.stringify(previous));
   }, []);
 
   const clear = useCallback(() => {
-    history.current = [];
+    historyRef.current = [];
+    setLength(0);
   }, []);
 
-  return { pushState, undo, canUndo, clear, historyLength: history.current.length };
+  return { canUndo: length > 0, pushState, undo, clear };
 }
