@@ -462,7 +462,7 @@ export default function ActiveWorkout() {
               onClick={() => handleSelectMode('guided')}
               className="w-full h-14 text-base"
             >
-              🎯 Guided Mode
+              Guided Mode
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
               Step-by-step through each set with rest timers
