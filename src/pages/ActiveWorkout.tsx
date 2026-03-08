@@ -66,6 +66,7 @@ export default function ActiveWorkout() {
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
   const { session, startSession, updateSession, pauseSession, resumeSession, clearSession, getElapsed } = useActiveSession();
+  const { saveSessionToCloud, clearCloudSession } = useCloudSession();
 
   const workout = workouts.find((w) => w.id === workoutId);
   const allExercises = [...exercises, ...customExercises];
