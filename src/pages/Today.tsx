@@ -26,8 +26,24 @@ const Today = () => {
   const workouts = useWorkoutStore((state) => state.workouts);
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const customExercises = useWorkoutStore((state) => state.customExercises);
-  const { session, clearSession } = useActiveSession();
+  const { session, clearSession, startSession } = useActiveSession();
+  const { loadSessionFromCloud, clearCloudSession } = useCloudSession();
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+
+  // Hydrate session from cloud if no local session exists
+  useEffect(() => {
+    if (!session) {
+      loadSessionFromCloud().then((cloudSession) => {
+        if (cloudSession) {
+          // Restore to localStorage so useActiveSession picks it up
+          localStorage.setItem('active-workout-session', JSON.stringify(cloudSession));
+          window.dispatchEvent(new Event('storage'));
+          // Force re-render by navigating to same page
+          navigate('/', { replace: true });
+        }
+      });
+    }
+  }, []); // Run once on mount
   
   const todayAssignment = getTodayAssignment();
   const today = new Date();
