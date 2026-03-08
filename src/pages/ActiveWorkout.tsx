@@ -16,6 +16,7 @@ import { useExerciseSearch } from '@/lib/exerciseSearch';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useToast } from '@/hooks/use-toast';
 import { useActiveSession, SessionSetLog } from '@/hooks/useActiveSession';
+import { useCloudSession } from '@/hooks/useCloudSession';
 import {
   Dialog,
   DialogContent,
