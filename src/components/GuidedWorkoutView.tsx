@@ -403,6 +403,20 @@ export function GuidedWorkoutView({
           }
           <ChevronRight className="w-5 h-5 ml-1" />
         </Button>
+        {onPause && (
+          <Button variant="ghost" className="w-full max-w-xs text-muted-foreground" onClick={() => onPause({
+            currentSetIndex,
+            phase: 'rest',
+            reps,
+            restSeconds,
+            challengeAccumulated,
+            challengeAttempt,
+            completedSets,
+          })}>
+            <Pause className="w-4 h-4 mr-1" />
+            Pause Workout
+          </Button>
+        )}
       </div>
     );
   }
