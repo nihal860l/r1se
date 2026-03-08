@@ -10,51 +10,58 @@ interface MembershipInfo {
   expiresAt: string | null;
 }
 
+const CACHE_KEY = 'membership-cache';
+
 /**
  * Server-authoritative membership gate.
- * - When online: fetches membership from server
- * - When offline: uses cached value from last successful fetch
- * - Never trusts client-only state for premium access
+ * - When online: validates via edge function (tamper-proof)
+ * - When offline: uses cached value from last successful server check
+ * - Never trusts client-only state for premium unlock decisions
  */
 export function useMembership() {
-  const { user } = useAuth();
-  const [membership, setMembership] = useState<MembershipInfo>({
-    tier: 'free',
-    isActive: true,
-    expiresAt: null,
+  const { user, session } = useAuth();
+  const [membership, setMembership] = useState<MembershipInfo>(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      return cached ? JSON.parse(cached) : { tier: 'free', isActive: true, expiresAt: null };
+    } catch {
+      return { tier: 'free', isActive: true, expiresAt: null };
+    }
   });
   const [loading, setLoading] = useState(true);
 
   const fetchMembership = useCallback(async () => {
-    if (!user) {
+    if (!user || !session) {
       setMembership({ tier: 'free', isActive: true, expiresAt: null });
       setLoading(false);
       return;
     }
 
+    if (!navigator.onLine) {
+      // Offline — trust cache, don't promote to premium if no cache
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error } = await (supabase as any)
-        .from('memberships')
-        .select('tier, is_active, expires_at')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Use edge function for server-authoritative check
+      const { data, error } = await supabase.functions.invoke('membership', {
+        body: { action: 'check' },
+      });
 
       if (error) throw error;
 
-      if (data) {
-        const info: MembershipInfo = {
-          tier: data.tier as MembershipTier,
-          isActive: data.is_active,
-          expiresAt: data.expires_at,
-        };
-        setMembership(info);
-        // Cache for offline use
-        localStorage.setItem('membership-cache', JSON.stringify(info));
-      }
+      const info: MembershipInfo = {
+        tier: (data.tier as MembershipTier) || 'free',
+        isActive: data.is_active ?? false,
+        expiresAt: data.expires_at || null,
+      };
+      setMembership(info);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(info));
     } catch {
-      // Offline or error - use cached value
+      // Network error or function unavailable — use cache
       try {
-        const cached = localStorage.getItem('membership-cache');
+        const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
           setMembership(JSON.parse(cached));
         }
@@ -64,13 +71,13 @@ export function useMembership() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, session]);
 
   useEffect(() => {
     fetchMembership();
   }, [fetchMembership]);
 
-  // Re-check when coming back online
+  // Re-validate when coming back online
   useEffect(() => {
     const handleOnline = () => fetchMembership();
     window.addEventListener('app-online', handleOnline);
