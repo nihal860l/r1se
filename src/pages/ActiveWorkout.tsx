@@ -402,6 +402,7 @@ export default function ActiveWorkout() {
   const confirmCancel = () => {
     setShowCancelConfirm(false);
     clearSession();
+    clearCloudSession();
     navigate('/');
   };
 
