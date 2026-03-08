@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { GoogleAuthButton } from './GoogleAuthButton';
 import { SettingsDialog } from './SettingsDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { R1SELogo } from './R1SELogo';
+import { useGlowStore } from '@/store/glowStore';
 
 interface LayoutProps {
   children: ReactNode;
