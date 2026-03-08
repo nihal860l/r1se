@@ -3,12 +3,20 @@ import { useCloudSync } from '@/hooks/useCloudSync';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
+import { useSyncProcessor } from '@/hooks/useSyncProcessor';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
-// This component initializes cloud sync when user is logged in
+// This component initializes cloud sync, offline queue processing, and network status
 export function CloudSyncProvider({ children }: { children: ReactNode }) {
   const { pushWorkoutPlan, pushWorkout, pushWorkoutUpdate, pushExercise, pushWorkoutLog, syncDeleteWorkout, syncDeleteExercise, syncDeleteHistory } = useCloudSync();
   const { user } = useAuth();
   const setSyncCallbacks = useWorkoutStore((state) => state.setSyncCallbacks);
+
+  // Initialize sync queue processor
+  useSyncProcessor();
+  
+  // Track network status (fires app-online/app-offline events)
+  useNetworkStatus();
   
   useEffect(() => {
     if (user) {
