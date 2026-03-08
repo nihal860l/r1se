@@ -69,6 +69,7 @@ export const useWorkoutStore = create<WorkoutState>()(
       onWorkoutAdded: undefined,
       onExerciseAdded: undefined,
       onHistoryAdded: undefined,
+      onHistoryUpdated: undefined,
       onPlanUpdated: undefined,
       
       addWorkout: (workout) => {
