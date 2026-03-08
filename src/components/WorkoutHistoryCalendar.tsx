@@ -140,6 +140,7 @@ export function WorkoutHistoryCalendar({ workoutLogs, onDelete }: WorkoutHistory
         open={selectedLog !== null}
         onOpenChange={(open) => !open && setSelectedLog(null)}
         onDelete={onDelete}
+        onEdit={(log) => { updateWorkoutLog(log.id, log); setSelectedLog(null); }}
       />
     </div>
   );

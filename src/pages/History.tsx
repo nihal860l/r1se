@@ -140,6 +140,7 @@ const History = () => {
         open={selectedLog !== null}
         onOpenChange={(open) => !open && setSelectedLog(null)}
         onDelete={handleDelete}
+        onEdit={(log) => { updateWorkoutLog(log.id, log); setSelectedLog(null); }}
       />
 
       {/* Delete Confirmation Dialog */}
