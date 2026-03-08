@@ -49,14 +49,13 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
           )}
         >
           <div className="container max-w-lg mx-auto py-4 px-4 flex items-center justify-between">
-            <h1 
+            <R1SELogo
               className={cn(
-                "text-2xl font-black tracking-tight transition-colors duration-200",
+                "text-2xl transition-colors duration-200",
                 isOverlayOpen ? "text-foreground" : "text-primary"
               )}
-            >
-              R1SE
-            </h1>
+              overrideColor={isOverlayOpen ? undefined : undefined}
+            />
             <div className="flex items-center gap-2">
               <GoogleAuthButton />
               {user && <SettingsDialog />}
