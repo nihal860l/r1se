@@ -3,7 +3,7 @@ import { Layout } from '@/components/Layout';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Calendar, BedDouble, Dumbbell, Eye, RotateCcw, PlayCircle, CheckCircle2, BookOpen, Clock } from 'lucide-react';
+import { Play, Calendar, BedDouble, Dumbbell, Eye, RotateCcw, PlayCircle, CheckCircle2, BookOpen, Clock, ChevronRight } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { exercises } from '@/data/exercises';
 import { useActiveSession } from '@/hooks/useActiveSession';
@@ -23,6 +23,7 @@ import { useState, useEffect } from 'react';
 const Today = () => {
   const navigate = useNavigate();
   const getTodayAssignment = useWorkoutStore((state) => state.getTodayAssignment);
+  const getActivePlan = useWorkoutStore((state) => state.getActivePlan);
   const workouts = useWorkoutStore((state) => state.workouts);
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const customExercises = useWorkoutStore((state) => state.customExercises);
@@ -45,6 +46,7 @@ const Today = () => {
     }
   }, []); // Run once on mount
   
+  const activePlan = getActivePlan();
   const todayAssignment = getTodayAssignment();
   const today = new Date();
   const formattedDate = format(today, 'EEE, MMM d');
@@ -103,8 +105,24 @@ const Today = () => {
         <div className="pt-4 pb-6">
           <p className="text-sm text-muted-foreground">{formattedDate}</p>
         </div>
+        
+        {/* Active Plan Display */}
+        {activePlan && (
+          <button
+            onClick={() => navigate('/workout-plan')}
+            className="w-full mb-6 p-4 rounded-lg border border-border bg-card hover:border-primary/50 transition-colors text-left"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Current Plan</p>
+                <p className="text-lg font-semibold text-foreground">{activePlan.name}</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </div>
+          </button>
+        )}
 
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center justify-center min-h-[50vh]">
           {/* Active Session Card */}
           {session ? (
             <Card className="w-full bg-card border-primary/30 border-2">
@@ -118,7 +136,7 @@ const Today = () => {
                 <div className="text-center">
                   <p className="text-lg font-semibold text-foreground">{session.workoutName}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {session.mode === 'guided' ? '🎯 Guided Mode' : '📋 Classic Mode'} · Paused
+                    {session.mode === 'guided' ? 'Guided Mode' : 'Classic Mode'} - Paused
                   </p>
                 </div>
 
@@ -219,7 +237,7 @@ const Today = () => {
               <CardContent className="space-y-6">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">
-                    {exerciseNames.join(' • ')}
+                    {exerciseNames.join(' - ')}
                     {workout.exercises.length > 3 && ` +${workout.exercises.length - 3} more`}
                   </p>
                   <p className="text-xs text-muted-foreground">
