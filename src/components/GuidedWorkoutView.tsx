@@ -350,8 +350,8 @@ export function GuidedWorkoutView({
         <Progress value={progress} className="w-full max-w-xs h-2" />
         <p className="text-sm text-muted-foreground font-medium">
           {isChallengeInProgress
-            ? `✓ Attempt ${challengeAttempt - 1} done — ${challengeAccumulated} / ${currentSet.targetReps || 30} reps`
-            : `✓ Set ${currentSetIndex + 1} of ${totalSets} done`
+            ? `Attempt ${challengeAttempt - 1} done — ${challengeAccumulated} / ${currentSet.targetReps || 30} reps`
+            : `Set ${currentSetIndex + 1} of ${totalSets} done`
           }
         </p>
 
