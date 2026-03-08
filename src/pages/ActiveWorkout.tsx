@@ -44,6 +44,8 @@ interface SetLog {
   intensity: IntensityLevel | null;
   setType: SetType;
   completed: boolean;
+  targetReps?: number;
+  challengeAccumulatedReps?: number;
 }
 
 // Generate reps options 0-100
