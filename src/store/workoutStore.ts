@@ -9,6 +9,10 @@ interface WorkoutState {
   customExercises: Exercise[];
   customMuscleGroups: string[];
   exerciseMuscleOverrides: Record<string, string>; // exerciseId -> muscleGroup
+  workoutPlans: WorkoutPlan[];
+  activePlanId: string | null;
+  
+  // Legacy: single plan (for migration)
   workoutPlan: WorkoutPlan | null;
   
   // Sync callbacks (set by CloudSyncProvider)
@@ -21,6 +25,7 @@ interface WorkoutState {
   onHistoryAdded?: (log: WorkoutLog) => void;
   onHistoryUpdated?: (log: WorkoutLog) => void;
   onPlanUpdated?: (plan: WorkoutPlan) => void;
+  onPlanDeleted?: (planId: string) => void;
   
   // Actions
   addWorkout: (workout: Workout) => void;
@@ -33,10 +38,19 @@ interface WorkoutState {
   deleteCustomExercise: (id: string) => void;
   addCustomMuscleGroup: (muscleGroup: string) => void;
   setExerciseMuscleGroup: (exerciseId: string, muscleGroup: string) => void;
-  setWorkoutPlan: (plan: WorkoutPlan) => void;
+  
+  // Multi-plan actions
+  addWorkoutPlan: (plan: WorkoutPlan) => void;
+  updateWorkoutPlan: (planId: string, updates: Partial<WorkoutPlan>) => void;
+  deleteWorkoutPlan: (planId: string) => void;
+  setActivePlan: (planId: string) => void;
+  getActivePlan: () => WorkoutPlan | null;
   updateDayAssignment: (dayOfWeek: number, assignment: DayAssignment) => void;
   addPlanException: (date: string, assignment: DayAssignment) => void;
   getTodayAssignment: () => DayAssignment;
+  
+  // Legacy (kept for backwards compat)
+  setWorkoutPlan: (plan: WorkoutPlan) => void;
   
   // Sync callback setters
   setSyncCallbacks: (callbacks: {
@@ -49,6 +63,7 @@ interface WorkoutState {
     onHistoryAdded?: (log: WorkoutLog) => void;
     onHistoryUpdated?: (log: WorkoutLog) => void;
     onPlanUpdated?: (plan: WorkoutPlan) => void;
+    onPlanDeleted?: (planId: string) => void;
   }) => void;
 }
 
@@ -60,6 +75,8 @@ export const useWorkoutStore = create<WorkoutState>()(
       customExercises: [],
       customMuscleGroups: [],
       exerciseMuscleOverrides: {},
+      workoutPlans: [],
+      activePlanId: null,
       workoutPlan: null,
       
       // Sync callbacks (undefined until CloudSyncProvider sets them)
@@ -71,6 +88,7 @@ export const useWorkoutStore = create<WorkoutState>()(
       onHistoryAdded: undefined,
       onHistoryUpdated: undefined,
       onPlanUpdated: undefined,
+      onPlanDeleted: undefined,
       
       addWorkout: (workout) => {
         set((state) => ({ workouts: [...state.workouts, workout] }));
@@ -102,19 +120,16 @@ export const useWorkoutStore = create<WorkoutState>()(
         set((state) => ({
           workoutLogs: state.workoutLogs.filter((l) => l.id !== id),
         }));
-        // Trigger sync callback
         get().onHistoryDeleted?.(id);
       },
       addCustomExercise: (exercise) => {
         set((state) => ({ customExercises: [...state.customExercises, exercise] }));
-        // Trigger sync callback
         get().onExerciseAdded?.(exercise);
       },
       deleteCustomExercise: (id) => {
         set((state) => ({
           customExercises: state.customExercises.filter((e) => e.id !== id),
         }));
-        // Trigger sync callback
         get().onExerciseDeleted?.(id);
       },
       addCustomMuscleGroup: (muscleGroup) =>
@@ -130,14 +145,80 @@ export const useWorkoutStore = create<WorkoutState>()(
             [exerciseId]: muscleGroup,
           },
         })),
-      setWorkoutPlan: (plan) => {
-        set({ workoutPlan: plan });
-        get().onPlanUpdated?.(plan);
+      
+      // Multi-plan actions
+      addWorkoutPlan: (plan) => {
+        const state = get();
+        const isFirst = state.workoutPlans.length === 0;
+        const newPlan = { ...plan, isActive: isFirst };
+        set((s) => ({
+          workoutPlans: [...s.workoutPlans, newPlan],
+          activePlanId: isFirst ? plan.planId : s.activePlanId,
+        }));
+        get().onPlanUpdated?.(newPlan);
       },
+      
+      updateWorkoutPlan: (planId, updates) => {
+        set((state) => ({
+          workoutPlans: state.workoutPlans.map((p) =>
+            p.planId === planId ? { ...p, ...updates, updatedAt: new Date() } : p
+          ),
+        }));
+        const updatedPlan = get().workoutPlans.find((p) => p.planId === planId);
+        if (updatedPlan) get().onPlanUpdated?.(updatedPlan);
+      },
+      
+      deleteWorkoutPlan: (planId) => {
+        const state = get();
+        const remainingPlans = state.workoutPlans.filter((p) => p.planId !== planId);
+        const wasActive = state.activePlanId === planId;
+        const newActivePlanId = wasActive && remainingPlans.length > 0 
+          ? remainingPlans[0].planId 
+          : wasActive ? null : state.activePlanId;
+        
+        set({
+          workoutPlans: remainingPlans.map((p) => ({
+            ...p,
+            isActive: p.planId === newActivePlanId,
+          })),
+          activePlanId: newActivePlanId,
+        });
+        get().onPlanDeleted?.(planId);
+      },
+      
+      setActivePlan: (planId) => {
+        set((state) => ({
+          activePlanId: planId,
+          workoutPlans: state.workoutPlans.map((p) => ({
+            ...p,
+            isActive: p.planId === planId,
+          })),
+        }));
+        const activePlan = get().workoutPlans.find((p) => p.planId === planId);
+        if (activePlan) get().onPlanUpdated?.(activePlan);
+      },
+      
+      getActivePlan: () => {
+        const state = get();
+        return state.workoutPlans.find((p) => p.planId === state.activePlanId) || null;
+      },
+      
+      // Legacy single plan setter (redirects to multi-plan)
+      setWorkoutPlan: (plan) => {
+        const state = get();
+        const existing = state.workoutPlans.find((p) => p.planId === plan.planId);
+        if (existing) {
+          get().updateWorkoutPlan(plan.planId, plan);
+        } else {
+          get().addWorkoutPlan(plan);
+        }
+      },
+      
       updateDayAssignment: (dayOfWeek, assignment) => {
         const state = get();
-        const plan = state.workoutPlan;
-        if (!plan) {
+        const activePlanId = state.activePlanId;
+        
+        if (!activePlanId) {
           // Create a new plan
           const newPlan: WorkoutPlan = {
             id: crypto.randomUUID(),
@@ -152,10 +233,14 @@ export const useWorkoutStore = create<WorkoutState>()(
             exceptions: [],
             createdAt: new Date(),
             updatedAt: new Date(),
+            isActive: true,
           };
-          set({ workoutPlan: newPlan });
+          set({ workoutPlans: [newPlan], activePlanId: newPlan.planId });
           get().onPlanUpdated?.(newPlan);
         } else {
+          const plan = state.workoutPlans.find((p) => p.planId === activePlanId);
+          if (!plan) return;
+          
           const updatedPlan = {
             ...plan,
             weeklyAssignments: {
@@ -164,14 +249,18 @@ export const useWorkoutStore = create<WorkoutState>()(
             },
             updatedAt: new Date(),
           };
-          set({ workoutPlan: updatedPlan });
+          set((s) => ({
+            workoutPlans: s.workoutPlans.map((p) => p.planId === activePlanId ? updatedPlan : p),
+          }));
           get().onPlanUpdated?.(updatedPlan);
         }
       },
+      
       addPlanException: (date, assignment) => {
         const state = get();
-        const plan = state.workoutPlan;
-        if (!plan) {
+        const activePlanId = state.activePlanId;
+        
+        if (!activePlanId) {
           // Create a new plan with exception
           const newPlan: WorkoutPlan = {
             id: crypto.randomUUID(),
@@ -183,11 +272,14 @@ export const useWorkoutStore = create<WorkoutState>()(
             exceptions: [{ date, type: assignment.type, workoutId: assignment.workoutId }],
             createdAt: new Date(),
             updatedAt: new Date(),
+            isActive: true,
           };
-          set({ workoutPlan: newPlan });
+          set({ workoutPlans: [newPlan], activePlanId: newPlan.planId });
           get().onPlanUpdated?.(newPlan);
         } else {
-          // Update existing exception or add new one
+          const plan = state.workoutPlans.find((p) => p.planId === activePlanId);
+          if (!plan) return;
+          
           const existingExceptionIndex = plan.exceptions.findIndex((e) => e.date === date);
           const updatedExceptions = [...plan.exceptions];
           if (existingExceptionIndex >= 0) {
@@ -200,13 +292,16 @@ export const useWorkoutStore = create<WorkoutState>()(
             exceptions: updatedExceptions,
             updatedAt: new Date(),
           };
-          set({ workoutPlan: updatedPlan });
+          set((s) => ({
+            workoutPlans: s.workoutPlans.map((p) => p.planId === activePlanId ? updatedPlan : p),
+          }));
           get().onPlanUpdated?.(updatedPlan);
         }
       },
+      
       getTodayAssignment: () => {
         const state = get();
-        const plan = state.workoutPlan;
+        const plan = state.workoutPlans.find((p) => p.planId === state.activePlanId);
         const today = format(new Date(), 'yyyy-MM-dd');
         const dayOfWeek = new Date().getDay();
         
@@ -223,14 +318,16 @@ export const useWorkoutStore = create<WorkoutState>()(
         // Fall back to weekly assignment
         return plan.weeklyAssignments[String(dayOfWeek) as keyof typeof plan.weeklyAssignments];
       },
+      
       setSyncCallbacks: (callbacks) => set(callbacks),
     }),
     {
       name: 'workout-storage',
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, version: number) => {
-        if (version < 2 && persistedState) {
-          const state = persistedState as any;
+        const state = persistedState as any;
+        
+        if (version < 2 && state) {
           if (state.customExercises) {
             state.customExercises = state.customExercises.map((e: any) => ({
               ...e,
@@ -243,7 +340,19 @@ export const useWorkoutStore = create<WorkoutState>()(
             }));
           }
         }
-        return persistedState as WorkoutState;
+        
+        // Migrate from single workoutPlan to workoutPlans array
+        if (version < 3 && state) {
+          if (state.workoutPlan && !state.workoutPlans) {
+            state.workoutPlans = [{ ...state.workoutPlan, isActive: true }];
+            state.activePlanId = state.workoutPlan.planId;
+          } else if (!state.workoutPlans) {
+            state.workoutPlans = [];
+            state.activePlanId = null;
+          }
+        }
+        
+        return state as WorkoutState;
       },
       partialize: (state) => ({
         workouts: state.workouts,
@@ -251,7 +360,8 @@ export const useWorkoutStore = create<WorkoutState>()(
         customExercises: state.customExercises,
         customMuscleGroups: state.customMuscleGroups,
         exerciseMuscleOverrides: state.exerciseMuscleOverrides,
-        workoutPlan: state.workoutPlan,
+        workoutPlans: state.workoutPlans,
+        activePlanId: state.activePlanId,
       }),
     }
   )

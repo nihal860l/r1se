@@ -8,7 +8,10 @@ import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 // This component initializes cloud sync, offline queue processing, and network status
 export function CloudSyncProvider({ children }: { children: ReactNode }) {
-  const { pushWorkoutPlan, pushWorkout, pushWorkoutUpdate, pushExercise, pushWorkoutLog, syncDeleteWorkout, syncDeleteExercise, syncDeleteHistory } = useCloudSync();
+  const { 
+    pushWorkoutPlan, pushWorkout, pushWorkoutUpdate, pushExercise, pushWorkoutLog, 
+    syncDeleteWorkout, syncDeleteExercise, syncDeleteHistory, syncDeletePlan 
+  } = useCloudSync();
   const { user } = useAuth();
   const setSyncCallbacks = useWorkoutStore((state) => state.setSyncCallbacks);
 
@@ -22,6 +25,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     if (user) {
       setSyncCallbacks({
         onPlanUpdated: pushWorkoutPlan,
+        onPlanDeleted: syncDeletePlan,
         onWorkoutAdded: pushWorkout,
         onWorkoutUpdated: pushWorkoutUpdate,
         onWorkoutDeleted: syncDeleteWorkout,
@@ -32,7 +36,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
         onHistoryDeleted: syncDeleteHistory,
       });
     }
-  }, [user, pushWorkoutPlan, pushWorkout, pushWorkoutUpdate, syncDeleteWorkout, pushExercise, syncDeleteExercise, pushWorkoutLog, syncDeleteHistory, setSyncCallbacks]);
+  }, [user, pushWorkoutPlan, syncDeletePlan, pushWorkout, pushWorkoutUpdate, syncDeleteWorkout, pushExercise, syncDeleteExercise, pushWorkoutLog, syncDeleteHistory, setSyncCallbacks]);
 
   return <>{children}</>;
 }

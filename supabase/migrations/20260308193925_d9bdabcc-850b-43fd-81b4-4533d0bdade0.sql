@@ -1,0 +1,1 @@
+ALTER TABLE public.workout_plans ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT false;

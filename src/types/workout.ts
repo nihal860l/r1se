@@ -109,6 +109,7 @@ export interface WorkoutPlan {
   exceptions: PlanException[];
   createdAt: Date;
   updatedAt: Date;
+  isActive?: boolean;
 }
 
 export const DEFAULT_WEEKLY_ASSIGNMENTS: WeeklyAssignments = {
