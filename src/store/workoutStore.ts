@@ -19,6 +19,7 @@ interface WorkoutState {
   onWorkoutUpdated?: (workout: Workout) => void;
   onExerciseAdded?: (exercise: Exercise) => void;
   onHistoryAdded?: (log: WorkoutLog) => void;
+  onHistoryUpdated?: (log: WorkoutLog) => void;
   onPlanUpdated?: (plan: WorkoutPlan) => void;
   
   // Actions
