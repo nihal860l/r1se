@@ -395,7 +395,7 @@ export function GuidedWorkoutView({
 
         <Button
           onClick={handleNextSet}
-          className="w-full max-w-xs h-14 text-lg mt-auto"
+          className={`w-full max-w-xs h-14 text-lg mt-auto ${!restDone ? 'text-foreground border-border' : ''}`}
           variant={restDone ? 'default' : 'outline'}
         >
           {restDone
