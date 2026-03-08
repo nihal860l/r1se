@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Plus, Pencil, Trash2, Search, X, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -15,6 +15,7 @@ import { exercises } from '@/data/exercises';
 import { useExerciseSearch } from '@/lib/exerciseSearch';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useToast } from '@/hooks/use-toast';
+import { useActiveSession, SessionSetLog } from '@/hooks/useActiveSession';
 import {
   Dialog,
   DialogContent,
@@ -56,17 +57,25 @@ const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating', 'chall
 export default function ActiveWorkout() {
   const navigate = useNavigate();
   const { workoutId } = useParams<{ workoutId: string }>();
+  const [searchParams] = useSearchParams();
+  const isResume = searchParams.get('resume') === 'true';
   
   const workouts = useWorkoutStore((state) => state.workouts);
   const addWorkoutLog = useWorkoutStore((state) => state.addWorkoutLog);
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
+  const { session, startSession, updateSession, pauseSession, resumeSession, clearSession, getElapsed } = useActiveSession();
 
   const workout = workouts.find((w) => w.id === workoutId);
   const allExercises = [...exercises, ...customExercises];
 
   // Mode: 'guided' or 'classic'
-  const [mode, setMode] = useState<'choose' | 'guided' | 'classic'>('choose');
+  const [mode, setMode] = useState<'choose' | 'guided' | 'classic'>(() => {
+    if (isResume && session && session.workoutId === workoutId) {
+      return session.mode;
+    }
+    return 'choose';
+  });
 
   const [workoutExercises, setWorkoutExercises] = useState<WorkoutExercise[]>([]);
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, SetLog[]>>({});
@@ -76,6 +85,7 @@ export default function ActiveWorkout() {
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [restoredSession, setRestoredSession] = useState(false);
   
   const [repsPicker, setRepsPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
@@ -84,10 +94,30 @@ export default function ActiveWorkout() {
 
   const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
-  // Initialize workout for classic mode
+  // Restore session for classic mode
   useEffect(() => {
-    if (workout && mode === 'classic') {
-      setStartTime(new Date());
+    if (isResume && session && session.workoutId === workoutId && mode === 'classic' && !restoredSession) {
+      setRestoredSession(true);
+      if (session.exerciseLogs) {
+        setExerciseLogs(session.exerciseLogs as Record<string, SetLog[]>);
+      }
+      if (session.workoutExercises) {
+        setWorkoutExercises(session.workoutExercises);
+      }
+      // Restore timing
+      const now = new Date();
+      setStartTime(new Date(now.getTime() - session.elapsedBeforePause * 1000));
+      setElapsed(session.elapsedBeforePause);
+      resumeSession();
+      return;
+    }
+  }, [isResume, session, workoutId, mode, restoredSession, resumeSession]);
+
+  // Initialize workout for classic mode (new session)
+  useEffect(() => {
+    if (workout && mode === 'classic' && !isResume && !restoredSession) {
+      const now = new Date();
+      setStartTime(now);
       setWorkoutExercises([...workout.exercises]);
       
       const logs: Record<string, SetLog[]> = {};
@@ -104,8 +134,18 @@ export default function ActiveWorkout() {
       });
       setExerciseLogs(logs);
       setIsEditMode(false);
+
+      // Start a session
+      startSession({
+        workoutId: workout.id,
+        workoutName: workout.name,
+        mode: 'classic',
+        startedAt: now.getTime(),
+        exerciseLogs: logs,
+        workoutExercises: workout.exercises,
+      });
     }
-  }, [workout, mode]);
+  }, [workout, mode, isResume, restoredSession]);
 
   // Timer
   useEffect(() => {
@@ -115,6 +155,18 @@ export default function ActiveWorkout() {
     }, 1000);
     return () => clearInterval(interval);
   }, [startTime]);
+
+  // Auto-save session state periodically for classic mode
+  useEffect(() => {
+    if (mode !== 'classic' || !startTime) return;
+    const saveInterval = setInterval(() => {
+      updateSession({
+        exerciseLogs: exerciseLogs as any,
+        workoutExercises,
+      });
+    }, 5000);
+    return () => clearInterval(saveInterval);
+  }, [mode, startTime, exerciseLogs, workoutExercises, updateSession]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -233,6 +285,20 @@ export default function ActiveWorkout() {
     }));
   };
 
+  const handlePause = () => {
+    if (mode === 'classic') {
+      pauseSession({
+        exerciseLogs: exerciseLogs as any,
+        workoutExercises,
+      });
+    }
+    toast({
+      title: 'Workout paused',
+      description: 'You can resume from the home screen.',
+    });
+    navigate('/');
+  };
+
   const finishWorkout = () => {
     if (!workout || !startTime) return;
 
@@ -263,6 +329,8 @@ export default function ActiveWorkout() {
       exercises: completedExercises,
     });
 
+    clearSession();
+
     toast({
       title: 'Workout complete! 💪',
       description: `${workout.name} logged in ${formatTime(elapsed)}.`,
@@ -287,13 +355,27 @@ export default function ActiveWorkout() {
       exercises: completedExercises,
     });
 
+    clearSession();
+
     toast({
       title: 'Workout complete! 💪',
       description: `${workout.name} has been saved to your history.`,
     });
 
     navigate('/');
-  }, [workout, addWorkoutLog, toast, navigate]);
+  }, [workout, addWorkoutLog, toast, navigate, clearSession]);
+
+  // Guided mode pause handler
+  const handleGuidedPause = useCallback((guidedState: any) => {
+    pauseSession({
+      guidedState,
+    });
+    toast({
+      title: 'Workout paused',
+      description: 'You can resume from the home screen.',
+    });
+    navigate('/');
+  }, [pauseSession, toast, navigate]);
 
   const handleCancel = () => {
     if (mode === 'choose') {
@@ -305,7 +387,21 @@ export default function ActiveWorkout() {
 
   const confirmCancel = () => {
     setShowCancelConfirm(false);
+    clearSession();
     navigate('/');
+  };
+
+  // Handle mode selection - start session for guided
+  const handleSelectMode = (selectedMode: 'guided' | 'classic') => {
+    if (selectedMode === 'guided' && workout) {
+      startSession({
+        workoutId: workout.id,
+        workoutName: workout.name,
+        mode: 'guided',
+        startedAt: Date.now(),
+      });
+    }
+    setMode(selectedMode);
   };
 
   // Get current picker values
@@ -346,7 +442,7 @@ export default function ActiveWorkout() {
 
           <div className="w-full max-w-xs space-y-3">
             <Button
-              onClick={() => setMode('guided')}
+              onClick={() => handleSelectMode('guided')}
               className="w-full h-14 text-base"
             >
               🎯 Guided Mode
@@ -357,7 +453,7 @@ export default function ActiveWorkout() {
 
             <Button
               variant="outline"
-              onClick={() => setMode('classic')}
+              onClick={() => handleSelectMode('classic')}
               className="w-full h-14 text-base text-foreground"
             >
               📋 Classic Mode
@@ -377,6 +473,9 @@ export default function ActiveWorkout() {
 
   // ===== GUIDED MODE =====
   if (mode === 'guided') {
+    const resumeGuidedState = isResume && session?.guidedState ? session.guidedState : undefined;
+    const resumeElapsed = isResume && session ? session.elapsedBeforePause : undefined;
+
     return (
       <Layout hideNav>
         <div className="container max-w-lg animate-fade-in px-4 flex flex-col min-h-[calc(100vh-60px)]">
@@ -386,6 +485,9 @@ export default function ActiveWorkout() {
             allExercises={allExercises}
             onComplete={handleGuidedComplete}
             onCancel={handleCancel}
+            onPause={handleGuidedPause}
+            resumeState={resumeGuidedState}
+            resumeElapsed={resumeElapsed}
           />
         </div>
       </Layout>
@@ -413,6 +515,9 @@ export default function ActiveWorkout() {
               >
                 <Pencil className="w-4 h-4 mr-1" />
                 {isEditMode ? 'Done' : 'Edit'}
+              </Button>
+              <Button variant="outline" size="icon" onClick={handlePause} className="text-foreground h-9 w-9" title="Pause workout">
+                <Pause className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={handleCancel} className="text-foreground">
                 <X className="w-5 h-5" />
