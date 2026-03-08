@@ -19,6 +19,7 @@ export interface WorkoutSet {
   reps?: number;
   setType?: SetType;
   intensity?: IntensityLevel;
+  targetReps?: number; // For challenge sets: total reps to accumulate
 }
 
 export interface WorkoutExercise {
