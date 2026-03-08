@@ -45,7 +45,7 @@ const Progress = () => {
   // Build map of all exercises
   const exerciseMap = useMemo(() => {
     const map = new Map<string, string>();
-    DEFAULT_EXERCISES.forEach((e) => map.set(e.id, e.name));
+    defaultExercises.forEach((e) => map.set(e.id, e.name));
     customExercises.forEach((e) => map.set(e.id, e.name));
     return map;
   }, [customExercises]);
