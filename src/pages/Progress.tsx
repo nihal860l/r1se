@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, ChevronDown, X, Search } from 'lucide-react';
 import { format } from 'date-fns';
-import { DEFAULT_EXERCISES } from '@/data/exercises';
+import { exercises as defaultExercises } from '@/data/exercises';
 import { Input } from '@/components/ui/input';
 import {
   LineChart,
