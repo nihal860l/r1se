@@ -57,18 +57,18 @@ export function useSyncProcessor() {
 }
 
 async function processItem(item: SyncQueueItem) {
+  const table = item.table as string;
+  
   if (item.operation === 'upsert') {
-    const { error } = await supabase
-      .from(item.table)
-      .upsert(item.payload as any);
+    const { error } = await (supabase as any)
+      .from(table)
+      .upsert(item.payload);
     if (error) throw error;
   } else if (item.operation === 'delete') {
-    // Payload should contain the filter conditions
-    let query = supabase.from(item.table).delete();
+    let query = (supabase as any).from(table).delete();
     
-    // Apply filters from payload
     for (const [key, value] of Object.entries(item.payload)) {
-      query = query.eq(key, value as string);
+      query = query.eq(key, value);
     }
     
     const { error } = await query;
