@@ -364,6 +364,7 @@ export default function ActiveWorkout() {
     });
 
     clearSession();
+    clearCloudSession();
 
     toast({
       title: 'Workout complete! 💪',
