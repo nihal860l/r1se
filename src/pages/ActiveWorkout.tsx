@@ -98,6 +98,8 @@ export default function ActiveWorkout() {
           intensity: set.intensity || null,
           setType: set.setType || 'normal',
           completed: false,
+          targetReps: set.targetReps,
+          challengeAccumulatedReps: 0,
         }));
       });
       setExerciseLogs(logs);
