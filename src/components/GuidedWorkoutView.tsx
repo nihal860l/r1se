@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Timer, ChevronRight, Trophy, Minus, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -43,7 +43,6 @@ export function GuidedWorkoutView({
   onComplete,
   onCancel,
 }: GuidedWorkoutViewProps) {
-  // Flatten all sets into a linear sequence
   const flatSets = useMemo<FlatSet[]>(() => {
     const sets: FlatSet[] = [];
     workoutExercises.forEach((we, exerciseIndex) => {
@@ -70,8 +69,9 @@ export function GuidedWorkoutView({
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
+  const [animKey, setAnimKey] = useState(0); // for transition animations
+  const restIntervalRef = useRef<ReturnType<typeof setInterval>>();
 
-  // Completed sets log
   const [completedSets, setCompletedSets] = useState<
     Record<string, CompletedSet[]>
   >({});
@@ -84,18 +84,25 @@ export function GuidedWorkoutView({
     return () => clearInterval(interval);
   }, [startTime]);
 
-  // Rest countdown
+  // Rest countdown - using ref-based interval for reliability
   useEffect(() => {
-    if (phase !== 'rest') return;
-    if (restSeconds <= 0) return;
-    const interval = setInterval(() => {
+    if (phase !== 'rest') {
+      if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+      return;
+    }
+    restIntervalRef.current = setInterval(() => {
       setRestSeconds((prev) => {
-        if (prev <= 1) return 0;
+        if (prev <= 1) {
+          if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+          return 0;
+        }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(interval);
-  }, [phase, restSeconds]);
+    return () => {
+      if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+    };
+  }, [phase]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -109,10 +116,14 @@ export function GuidedWorkoutView({
     ? 100
     : ((currentSetIndex) / totalSets) * 100;
 
+  // Rest timer progress (for circular indicator)
+  const restProgress = phase === 'rest'
+    ? ((DEFAULT_REST_SECONDS - restSeconds) / DEFAULT_REST_SECONDS) * 100
+    : 0;
+
   const handleFinishSet = useCallback(() => {
     if (!currentSet) return;
 
-    // Record completed set
     setCompletedSets((prev) => ({
       ...prev,
       [currentSet.exerciseId]: [
@@ -125,19 +136,32 @@ export function GuidedWorkoutView({
       ],
     }));
 
-    // Check if this was the last set
     if (currentSetIndex >= totalSets - 1) {
       setPhase('complete');
+      setAnimKey((k) => k + 1);
     } else {
       setPhase('rest');
       setRestSeconds(DEFAULT_REST_SECONDS);
+      setAnimKey((k) => k + 1);
     }
   }, [currentSet, currentSetIndex, totalSets, reps]);
+
+  const handleSkipSet = useCallback(() => {
+    if (currentSetIndex >= totalSets - 1) {
+      setPhase('complete');
+      setAnimKey((k) => k + 1);
+    } else {
+      setCurrentSetIndex((prev) => prev + 1);
+      setReps(10);
+      setAnimKey((k) => k + 1);
+    }
+  }, [currentSetIndex, totalSets]);
 
   const handleNextSet = useCallback(() => {
     setCurrentSetIndex((prev) => prev + 1);
     setReps(10);
     setPhase('perform');
+    setAnimKey((k) => k + 1);
   }, []);
 
   const handleCompleteWorkout = useCallback(() => {
@@ -153,7 +177,6 @@ export function GuidedWorkoutView({
     onComplete(exercises, duration);
   }, [completedSets, allExercises, elapsed, onComplete]);
 
-  // Determine if next set is a different exercise
   const isNewExerciseNext = currentSetIndex < totalSets - 1
     && flatSets[currentSetIndex + 1]?.exerciseId !== currentSet?.exerciseId;
 
@@ -169,38 +192,43 @@ export function GuidedWorkoutView({
   // ===== COMPLETION SCREEN =====
   if (phase === 'complete') {
     const totalCompletedSets = Object.values(completedSets).reduce(
-      (sum, sets) => sum + sets.length,
-      0
+      (sum, sets) => sum + sets.length, 0
     );
     const totalVolume = Object.values(completedSets).reduce(
-      (sum, sets) => sum + sets.reduce((s, set) => s + set.weight * set.reps, 0),
-      0
+      (sum, sets) => sum + sets.reduce((s, set) => s + set.weight * set.reps, 0), 0
     );
+    const exerciseCount = Object.keys(completedSets).length;
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-6 px-4 animate-fade-in">
-        <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
-          <Trophy className="w-10 h-10 text-primary" />
+      <div key={animKey} className="flex flex-col items-center justify-center min-h-[70vh] gap-6 px-4 animate-fade-in">
+        <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center animate-bounce">
+          <Trophy className="w-12 h-12 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground">Workout Complete!</h2>
-        <p className="text-muted-foreground text-center">
-          Great job finishing <span className="text-foreground font-medium">{workoutName}</span>
+        <h2 className="text-3xl font-bold text-foreground">Workout Complete!</h2>
+        <p className="text-muted-foreground text-center text-lg">
+          Great job finishing <span className="text-foreground font-semibold">{workoutName}</span>
         </p>
-        <div className="grid grid-cols-3 gap-4 w-full max-w-xs">
-          <div className="text-center">
+
+        <div className="grid grid-cols-2 gap-4 w-full max-w-xs mt-2">
+          <div className="bg-secondary/60 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-primary">{formatTime(elapsed)}</p>
-            <p className="text-xs text-muted-foreground">Duration</p>
+            <p className="text-xs text-muted-foreground mt-1">Duration</p>
           </div>
-          <div className="text-center">
+          <div className="bg-secondary/60 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-primary">{totalCompletedSets}</p>
-            <p className="text-xs text-muted-foreground">Sets</p>
+            <p className="text-xs text-muted-foreground mt-1">Sets</p>
           </div>
-          <div className="text-center">
+          <div className="bg-secondary/60 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-primary">{exerciseCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Exercises</p>
+          </div>
+          <div className="bg-secondary/60 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-primary">{Math.round(totalVolume)}</p>
-            <p className="text-xs text-muted-foreground">Volume (kg)</p>
+            <p className="text-xs text-muted-foreground mt-1">Volume (kg)</p>
           </div>
         </div>
-        <Button onClick={handleCompleteWorkout} className="w-full max-w-xs h-12 text-base mt-4">
+
+        <Button onClick={handleCompleteWorkout} className="w-full max-w-xs h-14 text-lg mt-4">
           Save & Finish
         </Button>
       </div>
@@ -213,62 +241,84 @@ export function GuidedWorkoutView({
     const restDone = restSeconds <= 0;
 
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-6 px-4 animate-fade-in">
+      <div key={animKey} className="flex flex-col items-center justify-center min-h-[70vh] gap-5 px-4 animate-fade-in">
         <Progress value={progress} className="w-full max-w-xs h-2" />
-        <p className="text-sm text-muted-foreground">
-          Set {currentSetIndex + 1} of {totalSets} completed
+        <p className="text-sm text-muted-foreground font-medium">
+          ✓ Set {currentSetIndex + 1} of {totalSets} done
         </p>
 
-        <div className="w-36 h-36 rounded-full border-4 border-primary/30 flex items-center justify-center relative">
-          {restDone ? (
-            <div className="text-center">
-              <p className="text-lg font-semibold text-primary">Ready!</p>
-            </div>
-          ) : (
-            <div className="text-center">
-              <Timer className="w-5 h-5 text-muted-foreground mx-auto mb-1" />
-              <p className="text-3xl font-mono font-bold text-foreground">{formatTime(restSeconds)}</p>
-              <p className="text-xs text-muted-foreground">Rest</p>
-            </div>
-          )}
+        {/* Rest timer circle */}
+        <div className="relative w-40 h-40 flex items-center justify-center">
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50" cy="50" r="44"
+              fill="none"
+              className="stroke-secondary"
+              strokeWidth="6"
+            />
+            <circle
+              cx="50" cy="50" r="44"
+              fill="none"
+              className="stroke-primary transition-all duration-1000 ease-linear"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 44}`}
+              strokeDashoffset={`${2 * Math.PI * 44 * (1 - restProgress / 100)}`}
+            />
+          </svg>
+          <div className="text-center z-10">
+            {restDone ? (
+              <p className="text-2xl font-bold text-primary animate-pulse">GO!</p>
+            ) : (
+              <>
+                <p className="text-4xl font-mono font-bold text-foreground tabular-nums">
+                  {formatTime(restSeconds)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Rest</p>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Adjust rest time */}
-        <div className="flex items-center gap-3">
+        {/* Adjust rest */}
+        <div className="flex items-center gap-4">
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8"
+            className="h-9 w-9 rounded-full"
             onClick={() => setRestSeconds((prev) => Math.max(0, prev - 15))}
           >
-            <Minus className="w-3 h-3" />
+            <Minus className="w-4 h-4" />
           </Button>
-          <span className="text-sm text-muted-foreground w-12 text-center">
+          <span className="text-sm text-muted-foreground w-10 text-center tabular-nums font-mono">
             {restDone ? '0s' : `${restSeconds}s`}
           </span>
           <Button
             variant="outline"
             size="icon"
-            className="h-8 w-8"
+            className="h-9 w-9 rounded-full"
             onClick={() => setRestSeconds((prev) => prev + 15)}
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-4 h-4" />
           </Button>
         </div>
 
+        {/* Up next preview */}
         {nextSet && (
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Up next</p>
-            <p className="text-foreground font-medium">
+          <div className="bg-secondary/50 rounded-xl px-6 py-3 text-center w-full max-w-xs">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Up next</p>
+            <p className="text-foreground font-semibold mt-1">
               {isNewExerciseNext ? nextSet.exerciseName : `Set ${nextSet.setIndex + 1}`}
-              {nextSet.weight > 0 && ` • ${nextSet.weight} kg`}
             </p>
+            {nextSet.weight > 0 && (
+              <p className="text-sm text-muted-foreground">{nextSet.weight} kg</p>
+            )}
           </div>
         )}
 
         <Button
           onClick={handleNextSet}
-          className="w-full max-w-xs h-12 text-base"
+          className="w-full max-w-xs h-14 text-lg mt-auto"
           variant={restDone ? 'default' : 'outline'}
         >
           {restDone ? 'Start Next Set' : 'Skip Rest'}
@@ -280,30 +330,39 @@ export function GuidedWorkoutView({
 
   // ===== PERFORM SET SCREEN =====
   return (
-    <div className="flex flex-col items-center min-h-[70vh] gap-4 px-4 animate-fade-in">
-      <Progress value={progress} className="w-full max-w-xs h-2 mt-2" />
-      <p className="text-sm text-muted-foreground">
-        Set {currentSetIndex + 1} of {totalSets}
-      </p>
+    <div key={animKey} className="flex flex-col items-center min-h-[70vh] gap-3 px-4 animate-fade-in">
+      {/* Progress */}
+      <Progress value={progress} className="w-full max-w-xs h-2 mt-4" />
+      <div className="flex items-center justify-between w-full max-w-xs">
+        <p className="text-sm text-muted-foreground">
+          Set {currentSetIndex + 1} of {totalSets}
+        </p>
+        <p className="text-sm text-muted-foreground font-mono tabular-nums">
+          {formatTime(elapsed)}
+        </p>
+      </div>
 
       {/* Exercise info */}
-      <div className="text-center mt-4">
-        <h2 className="text-2xl font-bold text-foreground">{currentSet.exerciseName}</h2>
+      <div className="text-center mt-6">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider">
+          Exercise {currentSet.exerciseIndex + 1}
+        </p>
+        <h2 className="text-2xl font-bold text-foreground mt-1">{currentSet.exerciseName}</h2>
         <p className="text-muted-foreground mt-1">
           Set {currentSet.setIndex + 1} of {currentSet.totalSetsForExercise}
         </p>
       </div>
 
-      {/* Target info */}
-      <div className="flex gap-6 mt-2">
+      {/* Target info cards */}
+      <div className="flex gap-4 mt-4">
         {currentSet.weight > 0 && (
-          <div className="text-center">
+          <div className="bg-secondary/60 rounded-xl px-6 py-3 text-center">
             <p className="text-3xl font-bold text-foreground">{currentSet.weight}</p>
             <p className="text-xs text-muted-foreground">kg</p>
           </div>
         )}
         {currentSet.intensity && (
-          <div className="text-center">
+          <div className="bg-primary/10 rounded-xl px-6 py-3 text-center">
             <p className="text-lg font-semibold text-primary">
               {INTENSITY_LABELS[currentSet.intensity]}
             </p>
@@ -312,45 +371,55 @@ export function GuidedWorkoutView({
         )}
       </div>
 
-      {/* Reps input */}
-      <div className="flex flex-col items-center gap-3 mt-6">
-        <p className="text-sm text-muted-foreground">Reps completed</p>
-        <div className="flex items-center gap-4">
+      {/* Reps input - large and central */}
+      <div className="flex flex-col items-center gap-2 mt-8">
+        <p className="text-sm text-muted-foreground font-medium">Reps completed</p>
+        <div className="flex items-center gap-5">
           <Button
             variant="outline"
             size="icon"
-            className="h-12 w-12 rounded-full"
+            className="h-14 w-14 rounded-full text-foreground"
             onClick={() => setReps((prev) => Math.max(0, prev - 1))}
           >
-            <Minus className="w-5 h-5" />
+            <Minus className="w-6 h-6" />
           </Button>
-          <span className="text-5xl font-bold text-foreground w-20 text-center tabular-nums">
+          <span className="text-6xl font-bold text-foreground w-24 text-center tabular-nums">
             {reps}
           </span>
           <Button
             variant="outline"
             size="icon"
-            className="h-12 w-12 rounded-full"
+            className="h-14 w-14 rounded-full text-foreground"
             onClick={() => setReps((prev) => prev + 1)}
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-6 h-6" />
           </Button>
         </div>
       </div>
 
-      {/* Timer */}
-      <p className="text-sm text-muted-foreground font-mono mt-4">
-        {formatTime(elapsed)}
-      </p>
-
       {/* Action buttons */}
       <div className="w-full max-w-xs mt-auto pb-6 space-y-3">
         <Button onClick={handleFinishSet} className="w-full h-14 text-lg">
-          {currentSetIndex >= totalSets - 1 ? 'Finish Last Set' : 'Done — Rest'}
+          {currentSetIndex >= totalSets - 1 ? '🏁 Finish Last Set' : '✅ Done — Rest'}
         </Button>
-        <Button variant="ghost" onClick={onCancel} className="w-full text-muted-foreground">
-          Cancel Workout
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            className="flex-1 text-muted-foreground"
+            onClick={handleSkipSet}
+          >
+            <SkipForward className="w-4 h-4 mr-1" />
+            Skip Set
+          </Button>
+          <Button
+            variant="ghost"
+            className="flex-1 text-muted-foreground"
+            onClick={onCancel}
+          >
+            <X className="w-4 h-4 mr-1" />
+            Cancel
+          </Button>
+        </div>
       </div>
     </div>
   );

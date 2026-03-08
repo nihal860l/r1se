@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { OptimizedWheelPicker } from './OptimizedWheelPicker';
+import { ScrollSnapPicker } from './ScrollSnapPicker';
 
 interface PickerDialogProps<T> {
   open: boolean;
@@ -47,7 +47,7 @@ function PickerDialogComponent<T>({
           <DialogTitle className="text-center text-foreground">{title}</DialogTitle>
         </DialogHeader>
         <div className="py-2">
-          <OptimizedWheelPicker
+          <ScrollSnapPicker
             items={items}
             value={tempValue}
             onChange={setTempValue}
