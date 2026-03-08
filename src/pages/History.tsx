@@ -4,7 +4,7 @@ import { useWorkoutStore } from '@/store/workoutStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Dumbbell, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Dumbbell, Trash2, CalendarDays, List } from 'lucide-react';
 import { format } from 'date-fns';
 import { INTENSITY_LABELS, SET_TYPE_LABELS } from '@/types/workout';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { WorkoutHistoryCalendar } from '@/components/WorkoutHistoryCalendar';
+import { WorkoutHistoryDetail } from '@/components/WorkoutHistoryDetail';
+import { WorkoutLog } from '@/types/workout';
 
 const History = () => {
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
@@ -25,9 +28,10 @@ const History = () => {
   const { toast } = useToast();
   
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [selectedLog, setSelectedLog] = useState<WorkoutLog | null>(null);
 
   const handleDelete = (id: string) => {
-    // Store action will trigger cloud sync callback automatically
     deleteWorkoutLog(id);
     setDeleteConfirm(null);
     toast({
@@ -39,31 +43,62 @@ const History = () => {
   return (
     <Layout>
       <div className="container max-w-lg animate-fade-in px-4">
-        <div className="pt-4 pb-4">
-          <h2 className="text-xl font-semibold">History</h2>
-          <p className="text-sm text-muted-foreground">Your completed workouts</p>
+        <div className="pt-4 pb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">History</h2>
+            <p className="text-sm text-muted-foreground">Your completed workouts</p>
+          </div>
+          {/* View Switcher */}
+          <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setViewMode('calendar')}
+            >
+              <CalendarDays className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-3">
-          {workoutLogs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-                <Calendar className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-medium text-lg mb-1">No history yet</h3>
-              <p className="text-muted-foreground text-sm max-w-xs">
-                Complete a workout to see it logged here.
-              </p>
+        {workoutLogs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+              <Calendar className="w-8 h-8 text-muted-foreground" />
             </div>
-          ) : (
-            workoutLogs.map((log) => (
-              <Card key={log.id} className="bg-card relative">
+            <h3 className="font-medium text-lg mb-1">No history yet</h3>
+            <p className="text-muted-foreground text-sm max-w-xs">
+              Complete a workout to see it logged here.
+            </p>
+          </div>
+        ) : viewMode === 'calendar' ? (
+          <WorkoutHistoryCalendar workoutLogs={workoutLogs} onDelete={handleDelete} />
+        ) : (
+          /* List View */
+          <div className="space-y-3">
+            {workoutLogs.map((log) => (
+              <Card 
+                key={log.id} 
+                className="bg-card relative cursor-pointer hover:bg-accent/10 transition-colors"
+                onClick={() => setSelectedLog(log)}
+              >
                 {/* Delete Button */}
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute top-3 right-3 h-8 w-8 text-muted-foreground hover:text-destructive"
-                  onClick={() => setDeleteConfirm(log.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDeleteConfirm(log.id);
+                  }}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -81,44 +116,30 @@ const History = () => {
                   </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-1">
                     {log.exercises.map((exercise, i) => (
-                      <div key={i} className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Dumbbell className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-medium">{exercise.exerciseName}</span>
-                        </div>
-                        <div className="pl-6 space-y-1">
-                          {exercise.sets.map((set, j) => (
-                            <div 
-                              key={j} 
-                              className="flex items-center gap-2 text-xs text-muted-foreground"
-                            >
-                              <span className="w-12">Set {j + 1}</span>
-                              <span className="w-16">{set.weight}kg</span>
-                              <span className="w-12">{set.reps} reps</span>
-                              {set.intensity && (
-                                <Badge variant="outline" className="text-xs h-5">
-                                  {INTENSITY_LABELS[set.intensity]}
-                                </Badge>
-                              )}
-                              {set.setType && set.setType !== 'normal' && (
-                                <Badge variant="secondary" className="text-xs h-5">
-                                  {SET_TYPE_LABELS[set.setType]}
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                      <div key={i} className="flex items-center gap-2">
+                        <Dumbbell className="w-3 h-3 text-primary" />
+                        <span className="text-sm text-muted-foreground">
+                          {exercise.exerciseName} · {exercise.sets.length} set{exercise.sets.length !== 1 ? 's' : ''}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Detail Dialog for List View */}
+      <WorkoutHistoryDetail
+        log={selectedLog}
+        open={selectedLog !== null}
+        onOpenChange={(open) => !open && setSelectedLog(null)}
+        onDelete={handleDelete}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => !open && setDeleteConfirm(null)}>

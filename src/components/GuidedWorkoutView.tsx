@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target } from 'lucide-react';
+import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -20,6 +20,17 @@ interface GuidedWorkoutViewProps {
     sets: CompletedSet[];
   }[], duration: number) => void;
   onCancel: () => void;
+  onPause?: (guidedState: any) => void;
+  resumeState?: {
+    currentSetIndex: number;
+    phase: 'perform' | 'rest';
+    reps: number;
+    restSeconds: number;
+    challengeAccumulated: number;
+    challengeAttempt: number;
+    completedSets: Record<string, any[]>;
+  };
+  resumeElapsed?: number;
 }
 
 type Phase = 'perform' | 'rest' | 'complete';
@@ -44,6 +55,9 @@ export function GuidedWorkoutView({
   allExercises,
   onComplete,
   onCancel,
+  onPause,
+  resumeState,
+  resumeElapsed,
 }: GuidedWorkoutViewProps) {
   const flatSets = useMemo<FlatSet[]>(() => {
     const sets: FlatSet[] = [];
@@ -67,22 +81,22 @@ export function GuidedWorkoutView({
     return sets;
   }, [workoutExercises, allExercises]);
 
-  const [currentSetIndex, setCurrentSetIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>('perform');
-  const [reps, setReps] = useState(10);
-  const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
-  const [startTime] = useState(() => Date.now());
-  const [elapsed, setElapsed] = useState(0);
+  const [currentSetIndex, setCurrentSetIndex] = useState(resumeState?.currentSetIndex ?? 0);
+  const [phase, setPhase] = useState<Phase>(resumeState?.phase ?? 'perform');
+  const [reps, setReps] = useState(resumeState?.reps ?? 10);
+  const [restSeconds, setRestSeconds] = useState(resumeState?.restSeconds ?? DEFAULT_REST_SECONDS);
+  const [startTime] = useState(() => resumeElapsed ? Date.now() - resumeElapsed * 1000 : Date.now());
+  const [elapsed, setElapsed] = useState(resumeElapsed ?? 0);
   const [animKey, setAnimKey] = useState(0);
   const restIntervalRef = useRef<ReturnType<typeof setInterval>>();
 
   // Challenge set state
-  const [challengeAccumulated, setChallengeAccumulated] = useState(0);
-  const [challengeAttempt, setChallengeAttempt] = useState(1);
+  const [challengeAccumulated, setChallengeAccumulated] = useState(resumeState?.challengeAccumulated ?? 0);
+  const [challengeAttempt, setChallengeAttempt] = useState(resumeState?.challengeAttempt ?? 1);
 
   const [completedSets, setCompletedSets] = useState<
     Record<string, CompletedSet[]>
-  >({});
+  >(resumeState?.completedSets as any ?? {});
 
   // Workout timer
   useEffect(() => {
@@ -389,6 +403,20 @@ export function GuidedWorkoutView({
           }
           <ChevronRight className="w-5 h-5 ml-1" />
         </Button>
+        {onPause && (
+          <Button variant="ghost" className="w-full max-w-xs text-muted-foreground" onClick={() => onPause({
+            currentSetIndex,
+            phase: 'rest',
+            reps,
+            restSeconds,
+            challengeAccumulated,
+            challengeAttempt,
+            completedSets,
+          })}>
+            <Pause className="w-4 h-4 mr-1" />
+            Pause Workout
+          </Button>
+        )}
       </div>
     );
   }
@@ -494,6 +522,20 @@ export function GuidedWorkoutView({
             <SkipForward className="w-4 h-4 mr-1" />
             Skip
           </Button>
+          {onPause && (
+            <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={() => onPause({
+              currentSetIndex,
+              phase,
+              reps,
+              restSeconds,
+              challengeAccumulated,
+              challengeAttempt,
+              completedSets,
+            })}>
+              <Pause className="w-4 h-4 mr-1" />
+              Pause
+            </Button>
+          )}
           <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={onCancel}>
             <X className="w-4 h-4 mr-1" />
             Cancel
