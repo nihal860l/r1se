@@ -25,6 +25,7 @@ import { WorkoutLog } from '@/types/workout';
 const History = () => {
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const deleteWorkoutLog = useWorkoutStore((state) => state.deleteWorkoutLog);
+  const updateWorkoutLog = useWorkoutStore((state) => state.updateWorkoutLog);
   const { toast } = useToast();
   
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
