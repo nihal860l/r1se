@@ -50,6 +50,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--btn-success))",
+          foreground: "hsl(var(--btn-success-foreground))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--btn-danger))",
+          foreground: "hsl(var(--btn-danger-foreground))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
