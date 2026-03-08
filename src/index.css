@@ -145,3 +145,16 @@
     display: none;
   }
 }
+
+/* Glow-enabled automatic enhancements */
+.glow-enabled .bg-primary {
+  box-shadow: 0 0 12px hsl(142 76% 46% / 0.3), 0 0 4px hsl(142 76% 46% / 0.15);
+}
+
+.glow-enabled .text-primary {
+  text-shadow: 0 0 8px hsl(142 76% 46% / 0.3);
+}
+
+.glow-enabled .bg-primary\/10 {
+  box-shadow: 0 0 10px hsl(142 76% 46% / 0.1);
+}
