@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, LogOut, Trash2, RotateCcw } from 'lucide-react';
+import { Settings, LogOut, Trash2, RotateCcw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,6 +22,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { useGlowStore } from '@/store/glowStore';
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
