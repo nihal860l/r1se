@@ -22,12 +22,20 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Cache all assets for offline use
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // CRITICAL: Never cache OAuth callback or auth routes
+        navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            // Cache Supabase REST/realtime but EXCLUDE auth endpoints
+            urlPattern: ({ url }) => {
+              return (
+                url.hostname.endsWith('.supabase.co') &&
+                !url.pathname.startsWith('/auth/')
+              );
+            },
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'supabase-api-cache',
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24, // 24 hours
@@ -46,6 +54,7 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         orientation: "portrait",
         start_url: "/",
+        scope: "/",
         icons: [
           {
             src: "/icon-192.png",
