@@ -33,7 +33,6 @@ export function SettingsDialog() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { glowEnabled, setGlowEnabled } = useGlowStore();
-  const { toast } = useToast();
 
   const handleResetExercises = () => {
     useWorkoutStore.setState({
