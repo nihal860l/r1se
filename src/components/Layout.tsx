@@ -48,7 +48,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
             <h1 
               className={cn(
                 "text-2xl font-black tracking-tight transition-colors duration-200",
-                isOverlayOpen ? "text-black" : "text-primary"
+                isOverlayOpen ? "text-foreground" : "text-primary"
               )}
             >
               R1SE
