@@ -508,6 +508,20 @@ export function GuidedWorkoutView({
             <SkipForward className="w-4 h-4 mr-1" />
             Skip
           </Button>
+          {onPause && (
+            <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={() => onPause({
+              currentSetIndex,
+              phase,
+              reps,
+              restSeconds,
+              challengeAccumulated,
+              challengeAttempt,
+              completedSets,
+            })}>
+              <Pause className="w-4 h-4 mr-1" />
+              Pause
+            </Button>
+          )}
           <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={onCancel}>
             <X className="w-4 h-4 mr-1" />
             Cancel
