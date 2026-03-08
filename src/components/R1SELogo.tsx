@@ -19,17 +19,17 @@ export function R1SELogo({ className, overrideColor }: R1SELogoProps) {
     >
       <span className={cn(glowEnabled && !overrideColor && 'text-glow')}>
         R
-        <span className="relative" style={{ marginRight: '0.3em' }}>
+        <span className="relative" style={{ marginRight: '0.18em' }}>
           1
           <span
             className="absolute font-semibold"
             style={{
-              fontSize: '0.32em',
-              top: '-0.05em',
+              fontSize: '0.3em',
+              top: '0em',
               left: '100%',
-              marginLeft: '0.05em',
+              marginLeft: '0.02em',
               lineHeight: 1,
-              opacity: 0.7,
+              opacity: 0.65,
             }}
           >
             %
