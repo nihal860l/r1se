@@ -471,11 +471,31 @@ export default function ActiveWorkout() {
     );
   }
 
+  const resumeGuidedState = isResume && session?.guidedState ? session.guidedState : undefined;
+  const resumeElapsedTime = isResume && session ? session.elapsedBeforePause : undefined;
+
+  // Shared cancel confirmation dialog - rendered for ALL modes
+  const cancelDialog = (
+    <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel Workout?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to cancel this workout session? Your progress will not be saved.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continue Workout</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmCancel} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Cancel Workout
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   // ===== GUIDED MODE =====
   if (mode === 'guided') {
-    const resumeGuidedState = isResume && session?.guidedState ? session.guidedState : undefined;
-    const resumeElapsed = isResume && session ? session.elapsedBeforePause : undefined;
-
     return (
       <Layout hideNav>
         <div className="container max-w-lg animate-fade-in px-4 flex flex-col min-h-[calc(100vh-60px)]">
@@ -487,9 +507,10 @@ export default function ActiveWorkout() {
             onCancel={handleCancel}
             onPause={handleGuidedPause}
             resumeState={resumeGuidedState}
-            resumeElapsed={resumeElapsed}
+            resumeElapsed={resumeElapsedTime}
           />
         </div>
+        {cancelDialog}
       </Layout>
     );
   }
