@@ -1,5 +1,6 @@
  import { useNavigate } from 'react-router-dom';
  import { Layout } from '@/components/Layout';
+ import { useGlowStore } from '@/store/glowStore';
  import { Card, CardContent } from '@/components/ui/card';
  import { Dumbbell, Calendar, Library } from 'lucide-react';
  
