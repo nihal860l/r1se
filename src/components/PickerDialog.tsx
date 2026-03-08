@@ -42,11 +42,11 @@ function PickerDialogComponent<T>({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xs bg-popover text-popover-foreground">
+      <DialogContent className="max-w-sm bg-popover text-popover-foreground">
         <DialogHeader>
           <DialogTitle className="text-center text-foreground">{title}</DialogTitle>
         </DialogHeader>
-        <div className="py-2">
+        <div className="py-3">
           <ScrollSnapPicker
             items={items}
             value={tempValue}

@@ -6,86 +6,89 @@ interface ScrollSnapPickerProps<T> {
   value: T;
   onChange: (value: T) => void;
   getLabel?: (item: T) => string;
-  itemHeight?: number;
-  visibleItems?: number;
   className?: string;
 }
+
+const ITEM_WIDTH = 64;
+const ITEM_WIDTH_LARGE = 80;
 
 function ScrollSnapPickerInner<T>({
   items,
   value,
   onChange,
   getLabel = (item) => String(item),
-  itemHeight = 44,
-  visibleItems = 5,
   className,
 }: ScrollSnapPickerProps<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
   const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
-  const centerOffset = Math.floor(visibleItems / 2);
-  const containerHeight = itemHeight * visibleItems;
 
-  // Scroll to the selected value when it changes externally
+  const isLargeSet = items.length > 20;
+  const itemW = isLargeSet ? ITEM_WIDTH : ITEM_WIDTH_LARGE;
+
+  // Scroll to selected value on mount / external change
   useEffect(() => {
     if (isUserScrolling.current) return;
     const idx = items.indexOf(value);
     if (idx >= 0 && scrollRef.current) {
-      scrollRef.current.scrollTop = idx * itemHeight;
+      const container = scrollRef.current;
+      const centerOffset = container.clientWidth / 2 - itemW / 2;
+      container.scrollLeft = idx * itemW - centerOffset;
     }
-  }, [value, items, itemHeight]);
+  }, [value, items, itemW]);
 
-  // On scroll end, determine which item is selected
   const handleScroll = useCallback(() => {
     isUserScrolling.current = true;
     if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     scrollTimeout.current = setTimeout(() => {
       isUserScrolling.current = false;
       if (!scrollRef.current) return;
-      const scrollTop = scrollRef.current.scrollTop;
-      const idx = Math.round(scrollTop / itemHeight);
+      const container = scrollRef.current;
+      const centerOffset = container.clientWidth / 2 - itemW / 2;
+      const idx = Math.round((container.scrollLeft + centerOffset) / itemW);
       const clamped = Math.max(0, Math.min(items.length - 1, idx));
       if (items[clamped] !== value) {
         onChange(items[clamped]);
       }
     }, 80);
-  }, [items, itemHeight, onChange, value]);
+  }, [items, itemW, onChange, value]);
 
-  // Click to select
   const handleItemClick = useCallback((idx: number) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: idx * itemHeight, behavior: 'smooth' });
-    }
     onChange(items[idx]);
-  }, [items, itemHeight, onChange]);
+    if (scrollRef.current) {
+      const centerOffset = scrollRef.current.clientWidth / 2 - itemW / 2;
+      scrollRef.current.scrollTo({ left: idx * itemW - centerOffset, behavior: 'smooth' });
+    }
+  }, [items, itemW, onChange]);
 
   return (
-    <div
-      className={cn('relative overflow-hidden select-none', className)}
-      style={{ height: containerHeight }}
-    >
-      {/* Gradient overlays */}
-      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background to-transparent pointer-events-none z-10" />
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
+    <div className={cn('relative overflow-hidden select-none', className)} style={{ height: 56 }}>
+      {/* Gradient edges */}
+      <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-popover to-transparent pointer-events-none z-10" />
+      <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-popover to-transparent pointer-events-none z-10" />
 
-      {/* Selection highlight */}
+      {/* Center highlight */}
       <div
-        className="absolute inset-x-2 bg-secondary/80 rounded-lg pointer-events-none z-0"
-        style={{ top: centerOffset * itemHeight, height: itemHeight }}
+        className="absolute top-1 bottom-1 bg-primary/15 border border-primary/30 rounded-lg pointer-events-none z-0"
+        style={{
+          left: '50%',
+          width: itemW,
+          transform: 'translateX(-50%)',
+        }}
       />
 
-      {/* Scrollable list with native scroll-snap */}
+      {/* Horizontal scroll */}
       <div
         ref={scrollRef}
-        className="relative z-[1] overflow-y-auto h-full scrollbar-none"
+        className="relative z-[1] overflow-x-auto h-full flex items-center scrollbar-none"
         style={{
-          scrollSnapType: 'y mandatory',
+          scrollSnapType: 'x mandatory',
           WebkitOverflowScrolling: 'touch',
         }}
         onScroll={handleScroll}
       >
-        {/* Top spacer to center first item */}
-        <div style={{ height: centerOffset * itemHeight }} />
+        {/* Left spacer */}
+        <div className="shrink-0" style={{ width: `calc(50% - ${itemW / 2}px)` }} />
 
         {items.map((item, i) => {
           const isSelected = item === value;
@@ -93,19 +96,20 @@ function ScrollSnapPickerInner<T>({
             <div
               key={i}
               className={cn(
-                'flex items-center justify-center cursor-pointer transition-colors',
+                'shrink-0 flex items-center justify-center cursor-pointer transition-all duration-150',
                 isSelected ? 'text-foreground' : 'text-muted-foreground'
               )}
               style={{
-                height: itemHeight,
-                scrollSnapAlign: 'start',
+                width: itemW,
+                height: '100%',
+                scrollSnapAlign: 'center',
               }}
               onClick={() => handleItemClick(i)}
             >
               <span
                 className={cn(
-                  'text-lg transition-all',
-                  isSelected ? 'font-semibold scale-105' : 'font-normal scale-90 opacity-60'
+                  'transition-all duration-150 text-center leading-tight',
+                  isSelected ? 'font-bold text-lg text-primary' : 'font-normal text-sm opacity-50'
                 )}
               >
                 {getLabel(item)}
@@ -114,8 +118,8 @@ function ScrollSnapPickerInner<T>({
           );
         })}
 
-        {/* Bottom spacer to center last item */}
-        <div style={{ height: centerOffset * itemHeight }} />
+        {/* Right spacer */}
+        <div className="shrink-0" style={{ width: `calc(50% - ${itemW / 2}px)` }} />
       </div>
     </div>
   );
