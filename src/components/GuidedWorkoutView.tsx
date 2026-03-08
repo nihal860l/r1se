@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X } from 'lucide-react';
+import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -34,6 +34,8 @@ interface FlatSet {
   weight: number;
   intensity?: IntensityLevel;
   totalSetsForExercise: number;
+  isChallenge: boolean;
+  targetReps?: number;
 }
 
 export function GuidedWorkoutView({
@@ -57,6 +59,8 @@ export function GuidedWorkoutView({
           weight: set.weight,
           intensity: set.intensity,
           totalSetsForExercise: we.sets.length,
+          isChallenge: set.setType === 'challenge',
+          targetReps: set.targetReps,
         });
       });
     });
@@ -69,8 +73,12 @@ export function GuidedWorkoutView({
   const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
-  const [animKey, setAnimKey] = useState(0); // for transition animations
+  const [animKey, setAnimKey] = useState(0);
   const restIntervalRef = useRef<ReturnType<typeof setInterval>>();
+
+  // Challenge set state
+  const [challengeAccumulated, setChallengeAccumulated] = useState(0);
+  const [challengeAttempt, setChallengeAttempt] = useState(1);
 
   const [completedSets, setCompletedSets] = useState<
     Record<string, CompletedSet[]>
@@ -84,7 +92,7 @@ export function GuidedWorkoutView({
     return () => clearInterval(interval);
   }, [startTime]);
 
-  // Rest countdown - using ref-based interval for reliability
+  // Rest countdown
   useEffect(() => {
     if (phase !== 'rest') {
       if (restIntervalRef.current) clearInterval(restIntervalRef.current);
@@ -116,14 +124,69 @@ export function GuidedWorkoutView({
     ? 100
     : ((currentSetIndex) / totalSets) * 100;
 
-  // Rest timer progress (for circular indicator)
   const restProgress = phase === 'rest'
     ? ((DEFAULT_REST_SECONDS - restSeconds) / DEFAULT_REST_SECONDS) * 100
     : 0;
 
+  const moveToNextSet = useCallback(() => {
+    if (currentSetIndex >= totalSets - 1) {
+      setPhase('complete');
+      setAnimKey((k) => k + 1);
+    } else {
+      setCurrentSetIndex((prev) => prev + 1);
+      setReps(10);
+      setChallengeAccumulated(0);
+      setChallengeAttempt(1);
+      setPhase('perform');
+      setAnimKey((k) => k + 1);
+    }
+  }, [currentSetIndex, totalSets]);
+
   const handleFinishSet = useCallback(() => {
     if (!currentSet) return;
 
+    if (currentSet.isChallenge) {
+      const newAccumulated = challengeAccumulated + reps;
+      const target = currentSet.targetReps || 30;
+
+      // Record this attempt
+      setCompletedSets((prev) => ({
+        ...prev,
+        [currentSet.exerciseId]: [
+          ...(prev[currentSet.exerciseId] || []),
+          {
+            reps,
+            weight: currentSet.weight,
+            setType: 'challenge',
+          },
+        ],
+      }));
+
+      if (newAccumulated >= target) {
+        // Challenge complete — move on
+        setChallengeAccumulated(newAccumulated);
+        if (currentSetIndex >= totalSets - 1) {
+          setPhase('complete');
+          setAnimKey((k) => k + 1);
+        } else {
+          setPhase('rest');
+          setRestSeconds(DEFAULT_REST_SECONDS);
+          setAnimKey((k) => k + 1);
+          // Mark that after rest we should move to next set
+          setChallengeAccumulated(newAccumulated);
+        }
+      } else {
+        // Challenge continues — rest then come back
+        setChallengeAccumulated(newAccumulated);
+        setChallengeAttempt((a) => a + 1);
+        setPhase('rest');
+        setRestSeconds(DEFAULT_REST_SECONDS);
+        setAnimKey((k) => k + 1);
+      }
+      return;
+    }
+
+    // Normal set
     setCompletedSets((prev) => ({
       ...prev,
       [currentSet.exerciseId]: [
@@ -144,9 +207,11 @@ export function GuidedWorkoutView({
       setRestSeconds(DEFAULT_REST_SECONDS);
       setAnimKey((k) => k + 1);
     }
-  }, [currentSet, currentSetIndex, totalSets, reps]);
+  }, [currentSet, currentSetIndex, totalSets, reps, challengeAccumulated]);
 
   const handleSkipSet = useCallback(() => {
+    setChallengeAccumulated(0);
+    setChallengeAttempt(1);
     if (currentSetIndex >= totalSets - 1) {
       setPhase('complete');
       setAnimKey((k) => k + 1);
@@ -158,11 +223,19 @@ export function GuidedWorkoutView({
   }, [currentSetIndex, totalSets]);
 
   const handleNextSet = useCallback(() => {
-    setCurrentSetIndex((prev) => prev + 1);
-    setReps(10);
-    setPhase('perform');
-    setAnimKey((k) => k + 1);
-  }, []);
+    if (currentSet?.isChallenge) {
+      const target = currentSet.targetReps || 30;
+      if (challengeAccumulated < target) {
+        // Continue challenge — go back to perform phase
+        setReps(Math.min(10, target - challengeAccumulated));
+        setPhase('perform');
+        setAnimKey((k) => k + 1);
+        return;
+      }
+    }
+    // Move to next set
+    moveToNextSet();
+  }, [currentSet, challengeAccumulated, moveToNextSet]);
 
   const handleCompleteWorkout = useCallback(() => {
     const exercises = Object.entries(completedSets).map(([exerciseId, sets]) => {
@@ -239,29 +312,26 @@ export function GuidedWorkoutView({
   if (phase === 'rest') {
     const nextSet = flatSets[currentSetIndex + 1];
     const restDone = restSeconds <= 0;
+    const isChallengeInProgress = currentSet?.isChallenge && challengeAccumulated < (currentSet.targetReps || 30);
 
     return (
       <div key={animKey} className="flex flex-col items-center justify-center min-h-[70vh] gap-5 px-4 animate-fade-in">
         <Progress value={progress} className="w-full max-w-xs h-2" />
         <p className="text-sm text-muted-foreground font-medium">
-          ✓ Set {currentSetIndex + 1} of {totalSets} done
+          {isChallengeInProgress
+            ? `✓ Attempt ${challengeAttempt - 1} done — ${challengeAccumulated} / ${currentSet.targetReps || 30} reps`
+            : `✓ Set ${currentSetIndex + 1} of ${totalSets} done`
+          }
         </p>
 
         {/* Rest timer circle */}
         <div className="relative w-40 h-40 flex items-center justify-center">
           <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="44" fill="none" className="stroke-secondary" strokeWidth="6" />
             <circle
-              cx="50" cy="50" r="44"
-              fill="none"
-              className="stroke-secondary"
-              strokeWidth="6"
-            />
-            <circle
-              cx="50" cy="50" r="44"
-              fill="none"
+              cx="50" cy="50" r="44" fill="none"
               className="stroke-primary transition-all duration-1000 ease-linear"
-              strokeWidth="6"
-              strokeLinecap="round"
+              strokeWidth="6" strokeLinecap="round"
               strokeDasharray={`${2 * Math.PI * 44}`}
               strokeDashoffset={`${2 * Math.PI * 44 * (1 - restProgress / 100)}`}
             />
@@ -271,9 +341,7 @@ export function GuidedWorkoutView({
               <p className="text-2xl font-bold text-primary animate-pulse">GO!</p>
             ) : (
               <>
-                <p className="text-4xl font-mono font-bold text-foreground tabular-nums">
-                  {formatTime(restSeconds)}
-                </p>
+                <p className="text-4xl font-mono font-bold text-foreground tabular-nums">{formatTime(restSeconds)}</p>
                 <p className="text-xs text-muted-foreground mt-1">Rest</p>
               </>
             )}
@@ -282,37 +350,31 @@ export function GuidedWorkoutView({
 
         {/* Adjust rest */}
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full"
-            onClick={() => setRestSeconds((prev) => Math.max(0, prev - 15))}
-          >
+          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={() => setRestSeconds((prev) => Math.max(0, prev - 15))}>
             <Minus className="w-4 h-4" />
           </Button>
-          <span className="text-sm text-muted-foreground w-10 text-center tabular-nums font-mono">
-            {restDone ? '0s' : `${restSeconds}s`}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 rounded-full"
-            onClick={() => setRestSeconds((prev) => prev + 15)}
-          >
+          <span className="text-sm text-muted-foreground w-10 text-center tabular-nums font-mono">{restDone ? '0s' : `${restSeconds}s`}</span>
+          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={() => setRestSeconds((prev) => prev + 15)}>
             <Plus className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Up next preview */}
-        {nextSet && (
+        {isChallengeInProgress ? (
+          <div className="bg-primary/10 rounded-xl px-6 py-3 text-center w-full max-w-xs border border-primary/20">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Continue challenge</p>
+            <p className="text-foreground font-semibold mt-1">{currentSet.exerciseName}</p>
+            <p className="text-sm text-primary font-medium">
+              {(currentSet.targetReps || 30) - challengeAccumulated} reps remaining
+            </p>
+          </div>
+        ) : nextSet && (
           <div className="bg-secondary/50 rounded-xl px-6 py-3 text-center w-full max-w-xs">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Up next</p>
             <p className="text-foreground font-semibold mt-1">
               {isNewExerciseNext ? nextSet.exerciseName : `Set ${nextSet.setIndex + 1}`}
             </p>
-            {nextSet.weight > 0 && (
-              <p className="text-sm text-muted-foreground">{nextSet.weight} kg</p>
-            )}
+            {nextSet.weight > 0 && <p className="text-sm text-muted-foreground">{nextSet.weight} kg</p>}
           </div>
         )}
 
@@ -321,7 +383,10 @@ export function GuidedWorkoutView({
           className="w-full max-w-xs h-14 text-lg mt-auto"
           variant={restDone ? 'default' : 'outline'}
         >
-          {restDone ? 'Start Next Set' : 'Skip Rest'}
+          {restDone
+            ? (isChallengeInProgress ? 'Continue Challenge' : 'Start Next Set')
+            : 'Skip Rest'
+          }
           <ChevronRight className="w-5 h-5 ml-1" />
         </Button>
       </div>
@@ -329,17 +394,19 @@ export function GuidedWorkoutView({
   }
 
   // ===== PERFORM SET SCREEN =====
+  const isChallenge = currentSet.isChallenge;
+  const challengeTarget = currentSet.targetReps || 30;
+  const challengeRemaining = challengeTarget - challengeAccumulated;
+
   return (
     <div key={animKey} className="flex flex-col items-center min-h-[70vh] gap-3 px-4 animate-fade-in">
       {/* Progress */}
       <Progress value={progress} className="w-full max-w-xs h-2 mt-4" />
       <div className="flex items-center justify-between w-full max-w-xs">
         <p className="text-sm text-muted-foreground">
-          Set {currentSetIndex + 1} of {totalSets}
+          {isChallenge ? `Challenge Set` : `Set ${currentSetIndex + 1} of ${totalSets}`}
         </p>
-        <p className="text-sm text-muted-foreground font-mono tabular-nums">
-          {formatTime(elapsed)}
-        </p>
+        <p className="text-sm text-muted-foreground font-mono tabular-nums">{formatTime(elapsed)}</p>
       </div>
 
       {/* Exercise info */}
@@ -348,9 +415,16 @@ export function GuidedWorkoutView({
           Exercise {currentSet.exerciseIndex + 1}
         </p>
         <h2 className="text-2xl font-bold text-foreground mt-1">{currentSet.exerciseName}</h2>
-        <p className="text-muted-foreground mt-1">
-          Set {currentSet.setIndex + 1} of {currentSet.totalSetsForExercise}
-        </p>
+        {isChallenge ? (
+          <div className="flex items-center justify-center gap-1 mt-1 text-primary">
+            <Target className="w-4 h-4" />
+            <span className="font-medium">Challenge Set — Attempt {challengeAttempt}</span>
+          </div>
+        ) : (
+          <p className="text-muted-foreground mt-1">
+            Set {currentSet.setIndex + 1} of {currentSet.totalSetsForExercise}
+          </p>
+        )}
       </div>
 
       {/* Target info cards */}
@@ -361,7 +435,14 @@ export function GuidedWorkoutView({
             <p className="text-xs text-muted-foreground">kg</p>
           </div>
         )}
-        {currentSet.intensity && (
+        {isChallenge ? (
+          <div className="bg-primary/10 rounded-xl px-6 py-3 text-center border border-primary/20">
+            <p className="text-lg font-semibold text-primary">
+              {challengeAccumulated} / {challengeTarget}
+            </p>
+            <p className="text-xs text-muted-foreground">{challengeRemaining} remaining</p>
+          </div>
+        ) : currentSet.intensity && (
           <div className="bg-primary/10 rounded-xl px-6 py-3 text-center">
             <p className="text-lg font-semibold text-primary">
               {INTENSITY_LABELS[currentSet.intensity]}
@@ -371,24 +452,27 @@ export function GuidedWorkoutView({
         )}
       </div>
 
-      {/* Reps input - large and central */}
+      {/* Challenge progress bar */}
+      {isChallenge && (
+        <div className="w-full max-w-xs mt-2">
+          <Progress value={(challengeAccumulated / challengeTarget) * 100} className="h-3" />
+        </div>
+      )}
+
+      {/* Reps input */}
       <div className="flex flex-col items-center gap-2 mt-8">
         <p className="text-sm text-muted-foreground font-medium">Reps completed</p>
         <div className="flex items-center gap-5">
           <Button
-            variant="outline"
-            size="icon"
+            variant="outline" size="icon"
             className="h-14 w-14 rounded-full text-foreground"
             onClick={() => setReps((prev) => Math.max(0, prev - 1))}
           >
             <Minus className="w-6 h-6" />
           </Button>
-          <span className="text-6xl font-bold text-foreground w-24 text-center tabular-nums">
-            {reps}
-          </span>
+          <span className="text-6xl font-bold text-foreground w-24 text-center tabular-nums">{reps}</span>
           <Button
-            variant="outline"
-            size="icon"
+            variant="outline" size="icon"
             className="h-14 w-14 rounded-full text-foreground"
             onClick={() => setReps((prev) => prev + 1)}
           >
@@ -400,22 +484,17 @@ export function GuidedWorkoutView({
       {/* Action buttons */}
       <div className="w-full max-w-xs mt-auto pb-6 space-y-3">
         <Button onClick={handleFinishSet} className="w-full h-14 text-lg">
-          {currentSetIndex >= totalSets - 1 ? '🏁 Finish Last Set' : '✅ Done — Rest'}
+          {isChallenge
+            ? (challengeAccumulated + reps >= challengeTarget ? '🏆 Complete Challenge' : '✅ Log & Rest')
+            : (currentSetIndex >= totalSets - 1 ? '🏁 Finish Last Set' : '✅ Done — Rest')
+          }
         </Button>
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            className="flex-1 text-muted-foreground"
-            onClick={handleSkipSet}
-          >
+          <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={handleSkipSet}>
             <SkipForward className="w-4 h-4 mr-1" />
-            Skip Set
+            Skip
           </Button>
-          <Button
-            variant="ghost"
-            className="flex-1 text-muted-foreground"
-            onClick={onCancel}
-          >
+          <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={onCancel}>
             <X className="w-4 h-4 mr-1" />
             Cancel
           </Button>
