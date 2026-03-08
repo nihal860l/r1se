@@ -39,9 +39,9 @@
  
          <div className="space-y-4">
            {planOptions.map((option) => (
-             <Card 
-               key={option.path}
-               className="bg-card border-border cursor-pointer card-hover"
+              <Card 
+                key={option.path}
+                className={cn("bg-card border-border cursor-pointer card-hover", glowEnabled && "card-glow border-glow")}
                onClick={() => navigate(option.path)}
              >
                <CardContent className="flex items-center gap-4 p-6">
