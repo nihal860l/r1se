@@ -81,22 +81,22 @@ export function GuidedWorkoutView({
     return sets;
   }, [workoutExercises, allExercises]);
 
-  const [currentSetIndex, setCurrentSetIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>('perform');
-  const [reps, setReps] = useState(10);
-  const [restSeconds, setRestSeconds] = useState(DEFAULT_REST_SECONDS);
-  const [startTime] = useState(() => Date.now());
-  const [elapsed, setElapsed] = useState(0);
+  const [currentSetIndex, setCurrentSetIndex] = useState(resumeState?.currentSetIndex ?? 0);
+  const [phase, setPhase] = useState<Phase>(resumeState?.phase ?? 'perform');
+  const [reps, setReps] = useState(resumeState?.reps ?? 10);
+  const [restSeconds, setRestSeconds] = useState(resumeState?.restSeconds ?? DEFAULT_REST_SECONDS);
+  const [startTime] = useState(() => resumeElapsed ? Date.now() - resumeElapsed * 1000 : Date.now());
+  const [elapsed, setElapsed] = useState(resumeElapsed ?? 0);
   const [animKey, setAnimKey] = useState(0);
   const restIntervalRef = useRef<ReturnType<typeof setInterval>>();
 
   // Challenge set state
-  const [challengeAccumulated, setChallengeAccumulated] = useState(0);
-  const [challengeAttempt, setChallengeAttempt] = useState(1);
+  const [challengeAccumulated, setChallengeAccumulated] = useState(resumeState?.challengeAccumulated ?? 0);
+  const [challengeAttempt, setChallengeAttempt] = useState(resumeState?.challengeAttempt ?? 1);
 
   const [completedSets, setCompletedSets] = useState<
     Record<string, CompletedSet[]>
-  >({});
+  >(resumeState?.completedSets as any ?? {});
 
   // Workout timer
   useEffect(() => {
