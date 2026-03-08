@@ -5,7 +5,8 @@
  import { Dumbbell, Calendar, Library } from 'lucide-react';
  
  const Plan = () => {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+  const glowEnabled = useGlowStore((s) => s.glowEnabled);
  
    const planOptions = [
      {
