@@ -49,7 +49,7 @@ interface SetLog {
 // Generate reps options 0-100
 const REPS_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
-const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating'];
+const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating', 'challenge'];
 
 export default function ActiveWorkout() {
   const navigate = useNavigate();
