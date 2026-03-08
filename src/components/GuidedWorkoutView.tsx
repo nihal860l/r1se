@@ -364,12 +364,12 @@ export function GuidedWorkoutView({
 
         {/* Adjust rest */}
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={() => setRestSeconds((prev) => Math.max(0, prev - 15))}>
-            <Minus className="w-4 h-4" />
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full text-foreground border-border" onClick={() => setRestSeconds((prev) => Math.max(0, prev - 15))}>
+            <Minus className="w-5 h-5" />
           </Button>
-          <span className="text-sm text-muted-foreground w-10 text-center tabular-nums font-mono">{restDone ? '0s' : `${restSeconds}s`}</span>
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" onClick={() => setRestSeconds((prev) => prev + 15)}>
-            <Plus className="w-4 h-4" />
+          <span className="text-sm text-foreground w-10 text-center tabular-nums font-mono">{restDone ? '0s' : `${restSeconds}s`}</span>
+          <Button variant="outline" size="icon" className="h-10 w-10 rounded-full text-foreground border-border" onClick={() => setRestSeconds((prev) => prev + 15)}>
+            <Plus className="w-5 h-5" />
           </Button>
         </div>
 
