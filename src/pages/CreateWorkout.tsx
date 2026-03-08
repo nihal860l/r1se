@@ -180,7 +180,7 @@ export default function CreateWorkout() {
                 i === setIndex ? { 
                   ...s, 
                   setType,
-                  ...(setType === 'challenge' ? { targetReps: s.targetReps || 30, intensity: undefined } : {}),
+                  ...(setType === 'challenge' ? { targetReps: s.targetReps || 30 } : {}),
                 } : s
               ),
             }
