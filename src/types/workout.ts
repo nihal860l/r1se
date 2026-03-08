@@ -10,7 +10,7 @@ export interface Exercise {
   isCustom?: boolean;
 }
 
-export type SetType = 'normal' | 'superset' | 'alternating';
+export type SetType = 'normal' | 'superset' | 'alternating' | 'challenge';
 
 export type IntensityLevel = 'warmup' | '2rir' | '1rir' | 'failure';
 
