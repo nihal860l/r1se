@@ -430,12 +430,15 @@ export default function CreateWorkout() {
                       </div>
                       
                       <div className="space-y-2">
-                        <div className="grid grid-cols-[48px_1fr_64px_48px] gap-2 text-xs text-muted-foreground px-1">
-                          <span className="text-center text-muted-foreground">Set</span>
-                          <span className="text-muted-foreground">Weight (kg)</span>
-                          <span className="text-center text-muted-foreground">Intensity</span>
-                          <span></span>
-                        </div>
+                        {/* Only show grid header if there are non-challenge sets */}
+                        {we.sets.some((s) => (s.setType || 'normal') !== 'challenge') && (
+                          <div className="grid grid-cols-[48px_1fr_64px_48px] gap-2 text-xs text-muted-foreground px-1">
+                            <span className="text-center">Set</span>
+                            <span>Weight (kg)</span>
+                            <span className="text-center">Intensity</span>
+                            <span></span>
+                          </div>
+                        )}
 
                         {we.sets.map((set, setIndex) => (
                           <CreateSetRow
