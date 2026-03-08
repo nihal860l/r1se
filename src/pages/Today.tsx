@@ -7,6 +7,7 @@ import { Play, Calendar, BedDouble, Dumbbell, Eye, RotateCcw, PlayCircle, CheckC
 import { format, isToday } from 'date-fns';
 import { exercises } from '@/data/exercises';
 import { useActiveSession } from '@/hooks/useActiveSession';
+import { useCloudSession } from '@/hooks/useCloudSession';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const Today = () => {
   const navigate = useNavigate();
@@ -25,8 +26,24 @@ const Today = () => {
   const workouts = useWorkoutStore((state) => state.workouts);
   const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const customExercises = useWorkoutStore((state) => state.customExercises);
-  const { session, clearSession } = useActiveSession();
+  const { session, clearSession, startSession } = useActiveSession();
+  const { loadSessionFromCloud, clearCloudSession } = useCloudSession();
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+
+  // Hydrate session from cloud if no local session exists
+  useEffect(() => {
+    if (!session) {
+      loadSessionFromCloud().then((cloudSession) => {
+        if (cloudSession) {
+          // Restore to localStorage so useActiveSession picks it up
+          localStorage.setItem('active-workout-session', JSON.stringify(cloudSession));
+          window.dispatchEvent(new Event('storage'));
+          // Force re-render by navigating to same page
+          navigate('/', { replace: true });
+        }
+      });
+    }
+  }, []); // Run once on mount
   
   const todayAssignment = getTodayAssignment();
   const today = new Date();
@@ -72,6 +89,7 @@ const Today = () => {
   const handleRestart = () => {
     if (session) {
       clearSession();
+      clearCloudSession();
       navigate(`/workout/${session.workoutId}`);
     } else if (workout) {
       navigate(`/workout/${workout.id}`);

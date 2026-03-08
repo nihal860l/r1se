@@ -16,6 +16,7 @@ import { useExerciseSearch } from '@/lib/exerciseSearch';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useToast } from '@/hooks/use-toast';
 import { useActiveSession, SessionSetLog } from '@/hooks/useActiveSession';
+import { useCloudSession } from '@/hooks/useCloudSession';
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ export default function ActiveWorkout() {
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { toast } = useToast();
   const { session, startSession, updateSession, pauseSession, resumeSession, clearSession, getElapsed } = useActiveSession();
+  const { saveSessionToCloud, clearCloudSession } = useCloudSession();
 
   const workout = workouts.find((w) => w.id === workoutId);
   const allExercises = [...exercises, ...customExercises];
@@ -285,16 +287,21 @@ export default function ActiveWorkout() {
     }));
   };
 
-  const handlePause = () => {
+  const handlePause = async () => {
     if (mode === 'classic') {
       pauseSession({
         exerciseLogs: exerciseLogs as any,
         workoutExercises,
       });
     }
+    // Save to cloud before navigating away
+    const currentSession = JSON.parse(localStorage.getItem('active-workout-session') || 'null');
+    if (currentSession) {
+      await saveSessionToCloud(currentSession);
+    }
     toast({
       title: 'Workout paused',
-      description: 'You can resume from the home screen.',
+      description: 'Progress saved to cloud. Resume from the home screen.',
     });
     navigate('/');
   };
@@ -330,6 +337,7 @@ export default function ActiveWorkout() {
     });
 
     clearSession();
+    clearCloudSession();
 
     toast({
       title: 'Workout complete! 💪',
@@ -356,6 +364,7 @@ export default function ActiveWorkout() {
     });
 
     clearSession();
+    clearCloudSession();
 
     toast({
       title: 'Workout complete! 💪',
@@ -363,19 +372,26 @@ export default function ActiveWorkout() {
     });
 
     navigate('/');
-  }, [workout, addWorkoutLog, toast, navigate, clearSession]);
+  }, [workout, addWorkoutLog, toast, navigate, clearSession, clearCloudSession]);
 
   // Guided mode pause handler
-  const handleGuidedPause = useCallback((guidedState: any) => {
+  const handleGuidedPause = useCallback(async (guidedState: any) => {
     pauseSession({
       guidedState,
     });
-    toast({
-      title: 'Workout paused',
-      description: 'You can resume from the home screen.',
-    });
-    navigate('/');
-  }, [pauseSession, toast, navigate]);
+    // Save to cloud after local state is updated
+    setTimeout(async () => {
+      const currentSession = JSON.parse(localStorage.getItem('active-workout-session') || 'null');
+      if (currentSession) {
+        await saveSessionToCloud(currentSession);
+      }
+      toast({
+        title: 'Workout paused',
+        description: 'Progress saved to cloud. Resume from the home screen.',
+      });
+      navigate('/');
+    }, 50);
+  }, [pauseSession, toast, navigate, saveSessionToCloud]);
 
   const handleCancel = () => {
     if (mode === 'choose') {
@@ -388,6 +404,7 @@ export default function ActiveWorkout() {
   const confirmCancel = () => {
     setShowCancelConfirm(false);
     clearSession();
+    clearCloudSession();
     navigate('/');
   };
 
