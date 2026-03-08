@@ -1,6 +1,6 @@
 import { ReactNode, createContext, useContext, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Calendar, ClipboardList, History, Dumbbell } from 'lucide-react';
+import { Calendar, ClipboardList, History, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GoogleAuthButton } from './GoogleAuthButton';
 import { SettingsDialog } from './SettingsDialog';
