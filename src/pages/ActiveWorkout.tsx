@@ -469,6 +469,8 @@ export default function ActiveWorkout() {
                         completed={set.completed}
                         isEditMode={isEditMode}
                         isOnlySet={sets.length === 1}
+                        targetReps={set.targetReps}
+                        challengeAccumulatedReps={set.challengeAccumulatedReps}
                         onWeightChange={(weight) => updateSetLog(we.exerciseId, i, 'weight', weight)}
                         onOpenRepsPicker={() => setRepsPicker({ exerciseId: we.exerciseId, setIndex: i })}
                         onOpenIntensityPicker={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex: i })}
