@@ -404,7 +404,7 @@ export function GuidedWorkoutView({
           <ChevronRight className="w-5 h-5 ml-1" />
         </Button>
         {onPause && (
-          <Button variant="ghost" className="w-full max-w-xs text-muted-foreground" onClick={() => onPause({
+          <Button variant="outline" className="w-full max-w-xs text-foreground border-border" onClick={() => onPause({
             currentSetIndex,
             phase: 'rest',
             reps,
