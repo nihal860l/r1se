@@ -340,7 +340,7 @@ export default function ActiveWorkout() {
     clearCloudSession();
 
     toast({
-      title: 'Workout complete! 💪',
+      title: 'Workout complete',
       description: `${workout.name} logged in ${formatTime(elapsed)}.`,
     });
 
@@ -367,7 +367,7 @@ export default function ActiveWorkout() {
     clearCloudSession();
 
     toast({
-      title: 'Workout complete! 💪',
+      title: 'Workout complete',
       description: `${workout.name} has been saved to your history.`,
     });
 
