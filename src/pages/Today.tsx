@@ -3,8 +3,8 @@ import { Layout } from '@/components/Layout';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Play, Calendar, BedDouble, Dumbbell, Eye, RotateCcw, PlayCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { Play, Calendar, BedDouble, Dumbbell, Eye, RotateCcw, PlayCircle, CheckCircle2, BookOpen, Clock } from 'lucide-react';
+import { format, isToday } from 'date-fns';
 import { exercises } from '@/data/exercises';
 import { useActiveSession } from '@/hooks/useActiveSession';
 import {
@@ -23,6 +23,7 @@ const Today = () => {
   const navigate = useNavigate();
   const getTodayAssignment = useWorkoutStore((state) => state.getTodayAssignment);
   const workouts = useWorkoutStore((state) => state.workouts);
+  const workoutLogs = useWorkoutStore((state) => state.workoutLogs);
   const customExercises = useWorkoutStore((state) => state.customExercises);
   const { session, clearSession } = useActiveSession();
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
@@ -41,6 +42,14 @@ const Today = () => {
     .map((we) => allExercises.find((e) => e.id === we.exerciseId)?.name)
     .filter(Boolean)
     .slice(0, 3) || [];
+
+  // Check if today's scheduled workout has been completed
+  const todayCompleted = todayAssignment.type === 'Workout' && todayAssignment.workoutId
+    ? workoutLogs.some((log) => {
+        const logDate = new Date(log.completedAt);
+        return isToday(logDate) && log.workoutId === todayAssignment.workoutId;
+      })
+    : false;
 
   const handleStartWorkout = () => {
     if (workout) {
@@ -64,13 +73,10 @@ const Today = () => {
     if (session) {
       clearSession();
       navigate(`/workout/${session.workoutId}`);
+    } else if (workout) {
+      navigate(`/workout/${workout.id}`);
     }
     setShowRestartConfirm(false);
-  };
-
-  const formatElapsed = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    return `${mins} min`;
   };
 
   return (
@@ -108,6 +114,48 @@ const Today = () => {
                     RESUME WORKOUT
                   </Button>
                   <Button 
+                    variant="outline"
+                    className="w-full gap-2 text-foreground"
+                    onClick={() => setShowRestartConfirm(true)}
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    RESTART WORKOUT
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : todayCompleted && workout ? (
+            // Workout Completed Card
+            <Card className="w-full bg-card border-border">
+              <CardHeader className="pb-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-primary" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-center">Today's Workout Complete</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <p className="text-center text-muted-foreground">
+                  Great work finishing <span className="font-medium text-foreground">{workout.name}</span>!
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  <Button
+                    size="lg"
+                    className="w-full gap-2"
+                    onClick={() => navigate('/workouts')}
+                  >
+                    <BookOpen className="w-5 h-5" />
+                    WORKOUT LIBRARY
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => navigate('/history')}
+                  >
+                    <Clock className="w-4 h-4" />
+                    WORKOUT HISTORY
+                  </Button>
+                  <Button
                     variant="outline"
                     className="w-full gap-2 text-foreground"
                     onClick={() => setShowRestartConfirm(true)}
@@ -210,7 +258,7 @@ const Today = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Restart Workout?</AlertDialogTitle>
             <AlertDialogDescription>
-              All progress for the current session will be cleared and the workout will start from the beginning.
+              Are you sure you want to restart this workout? This will start the workout again from the beginning.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
