@@ -372,7 +372,7 @@ export default function ActiveWorkout() {
     });
 
     navigate('/');
-  }, [workout, addWorkoutLog, toast, navigate, clearSession]);
+  }, [workout, addWorkoutLog, toast, navigate, clearSession, clearCloudSession]);
 
   // Guided mode pause handler
   const handleGuidedPause = useCallback(async (guidedState: any) => {
