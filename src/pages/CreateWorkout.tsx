@@ -444,11 +444,13 @@ export default function CreateWorkout() {
                             weight={set.weight}
                             setType={set.setType || 'normal'}
                             intensity={set.intensity || '2rir'}
+                            targetReps={set.targetReps}
                             isOnlySet={we.sets.length === 1}
                             onWeightChange={(weight) => updateSetWeight(we.exerciseId, setIndex, weight)}
                             onOpenIntensityPicker={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex })}
                             onOpenSetTypePicker={() => setSetTypePicker({ exerciseId: we.exerciseId, setIndex })}
                             onRemoveSet={() => removeSet(we.exerciseId, setIndex)}
+                            onTargetRepsChange={(reps) => updateSetTargetReps(we.exerciseId, setIndex, reps)}
                           />
                         ))}
                         
