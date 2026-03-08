@@ -18,7 +18,7 @@ export function R1SELogo({ className, overrideColor }: R1SELogoProps) {
       style={overrideColor ? { color: overrideColor } : undefined}
     >
       <span className={cn(glowEnabled && !overrideColor && 'text-glow')}>
-        R1<sup style={{ fontSize: '0.35em', fontWeight: 600, opacity: 0.65, verticalAlign: 'super', lineHeight: 0 }}>%</sup>SE
+        R1SE
       </span>
     </span>
   );
