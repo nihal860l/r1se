@@ -518,12 +518,12 @@ export function GuidedWorkoutView({
           }
         </Button>
         <div className="flex gap-2">
-          <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={handleSkipSet}>
+          <Button variant="outline" className="flex-1 text-foreground border-border" onClick={handleSkipSet}>
             <SkipForward className="w-4 h-4 mr-1" />
             Skip
           </Button>
           {onPause && (
-            <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={() => onPause({
+            <Button variant="outline" className="flex-1 text-foreground border-border" onClick={() => onPause({
               currentSetIndex,
               phase,
               reps,
@@ -536,7 +536,7 @@ export function GuidedWorkoutView({
               Pause
             </Button>
           )}
-          <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={onCancel}>
+          <Button variant="outline" className="flex-1 text-destructive border-destructive/30" onClick={onCancel}>
             <X className="w-4 h-4 mr-1" />
             Cancel
           </Button>
