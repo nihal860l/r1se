@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { GoogleAuthButton } from './GoogleAuthButton';
 import { SettingsDialog } from './SettingsDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { R1SELogo } from './R1SELogo';
+import { useGlowStore } from '@/store/glowStore';
 
 interface LayoutProps {
   children: ReactNode;
@@ -34,6 +36,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
   const location = useLocation();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const { user } = useAuth();
+  const glowEnabled = useGlowStore((s) => s.glowEnabled);
 
   return (
     <HeaderContext.Provider value={{ isOverlayOpen, setIsOverlayOpen }}>
@@ -46,14 +49,13 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
           )}
         >
           <div className="container max-w-lg mx-auto py-4 px-4 flex items-center justify-between">
-            <h1 
+            <R1SELogo
               className={cn(
-                "text-2xl font-black tracking-tight transition-colors duration-200",
+                "text-2xl transition-colors duration-200",
                 isOverlayOpen ? "text-foreground" : "text-primary"
               )}
-            >
-              R1SE
-            </h1>
+              overrideColor={isOverlayOpen ? undefined : undefined}
+            />
             <div className="flex items-center gap-2">
               <GoogleAuthButton />
               {user && <SettingsDialog />}
@@ -67,7 +69,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
         
         {/* Bottom Navigation */}
         {!hideNav && (
-          <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40">
+          <nav className={cn("fixed bottom-0 left-0 right-0 bg-card border-t z-40", glowEnabled ? "border-primary/20 shadow-[0_-2px_20px_hsl(142_76%_46%/0.08)]" : "border-border")}>
             <div className="container max-w-lg mx-auto">
               <div className="flex justify-around items-center py-2">
                 {navItems.map(({ to, icon: Icon, label }) => {
@@ -83,7 +85,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
                           : 'text-muted-foreground hover:text-foreground'
                       )}
                     >
-                      <Icon className={cn('w-5 h-5', isActive && 'glow')} />
+                      <Icon className={cn('w-5 h-5', isActive && glowEnabled && 'glow')} />
                       <span className="text-xs font-medium">{label}</span>
                     </NavLink>
                   );

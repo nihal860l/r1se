@@ -1,10 +1,13 @@
  import { useNavigate } from 'react-router-dom';
  import { Layout } from '@/components/Layout';
+ import { useGlowStore } from '@/store/glowStore';
  import { Card, CardContent } from '@/components/ui/card';
  import { Dumbbell, Calendar, Library } from 'lucide-react';
+ import { cn } from '@/lib/utils';
  
  const Plan = () => {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+  const glowEnabled = useGlowStore((s) => s.glowEnabled);
  
    const planOptions = [
      {
@@ -37,9 +40,9 @@
  
          <div className="space-y-4">
            {planOptions.map((option) => (
-             <Card 
-               key={option.path}
-               className="bg-card border-border cursor-pointer card-hover"
+              <Card 
+                key={option.path}
+                className={cn("bg-card border-border cursor-pointer card-hover", glowEnabled && "card-glow border-glow")}
                onClick={() => navigate(option.path)}
              >
                <CardContent className="flex items-center gap-4 p-6">

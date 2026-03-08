@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, LogOut, Trash2, RotateCcw } from 'lucide-react';
+import { Settings, LogOut, Trash2, RotateCcw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,6 +22,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { useGlowStore } from '@/store/glowStore';
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
@@ -30,6 +32,7 @@ export function SettingsDialog() {
   
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { glowEnabled, setGlowEnabled } = useGlowStore();
 
   const handleResetExercises = () => {
     useWorkoutStore.setState({
@@ -93,6 +96,18 @@ export function SettingsDialog() {
                 </div>
               </div>
             )}
+
+            {/* Glow Toggle */}
+            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Glow Effects</p>
+                  <p className="text-xs text-muted-foreground">Neon glow on UI elements</p>
+                </div>
+              </div>
+              <Switch checked={glowEnabled} onCheckedChange={setGlowEnabled} />
+            </div>
 
             {/* Reset Options */}
             <div className="space-y-2">
