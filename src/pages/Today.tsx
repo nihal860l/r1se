@@ -122,7 +122,7 @@ const Today = () => {
           </button>
         )}
 
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center">
           {/* Active Session Card */}
           {session ? (
             <Card className="w-full bg-card border-primary/30 border-2">
