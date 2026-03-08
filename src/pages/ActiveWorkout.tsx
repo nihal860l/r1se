@@ -138,6 +138,25 @@ export default function ActiveWorkout() {
 
   const toggleSetComplete = (exerciseId: string, setIndex: number) => {
     const currentSet = exerciseLogs[exerciseId][setIndex];
+    
+    // For challenge sets, accumulate reps on complete
+    if (currentSet.setType === 'challenge' && !currentSet.completed) {
+      const repsToAdd = currentSet.reps || 0;
+      const newAccumulated = (currentSet.challengeAccumulatedReps || 0) + repsToAdd;
+      const target = currentSet.targetReps || 30;
+      const challengeComplete = newAccumulated >= target;
+      
+      setExerciseLogs((prev) => ({
+        ...prev,
+        [exerciseId]: prev[exerciseId].map((set, i) =>
+          i === setIndex 
+            ? { ...set, challengeAccumulatedReps: newAccumulated, completed: challengeComplete, reps: null }
+            : set
+        ),
+      }));
+      return;
+    }
+    
     updateSetLog(exerciseId, setIndex, 'completed', !currentSet.completed);
   };
 
