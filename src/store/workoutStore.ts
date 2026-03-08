@@ -27,6 +27,7 @@ interface WorkoutState {
   updateWorkout: (id: string, workout: Workout) => void;
   deleteWorkout: (id: string) => void;
   addWorkoutLog: (log: WorkoutLog) => void;
+  updateWorkoutLog: (id: string, log: WorkoutLog) => void;
   deleteWorkoutLog: (id: string) => void;
   addCustomExercise: (exercise: Exercise) => void;
   deleteCustomExercise: (id: string) => void;
