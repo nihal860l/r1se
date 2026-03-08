@@ -287,16 +287,21 @@ export default function ActiveWorkout() {
     }));
   };
 
-  const handlePause = () => {
+  const handlePause = async () => {
     if (mode === 'classic') {
       pauseSession({
         exerciseLogs: exerciseLogs as any,
         workoutExercises,
       });
     }
+    // Save to cloud before navigating away
+    const currentSession = JSON.parse(localStorage.getItem('active-workout-session') || 'null');
+    if (currentSession) {
+      await saveSessionToCloud(currentSession);
+    }
     toast({
       title: 'Workout paused',
-      description: 'You can resume from the home screen.',
+      description: 'Progress saved to cloud. Resume from the home screen.',
     });
     navigate('/');
   };
