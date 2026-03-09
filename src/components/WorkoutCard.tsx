@@ -4,7 +4,9 @@ import { Play, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useWorkoutStore } from '@/store/workoutStore';
+import { useGlowStore } from '@/store/glowStore';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface WorkoutCardProps {
   workout: Workout;
@@ -14,6 +16,7 @@ interface WorkoutCardProps {
 export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
   const deleteWorkout = useWorkoutStore((state) => state.deleteWorkout);
   const customExercises = useWorkoutStore((state) => state.customExercises);
+  const glowEnabled = useGlowStore((s) => s.glowEnabled);
   const { toast } = useToast();
 
   const allExercises = [...exercises, ...customExercises];
@@ -33,10 +36,13 @@ export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
   };
 
   return (
-    <Card className="card-hover bg-card border-border">
+    <Card className={cn(
+      "bg-card transition-all duration-300 hover:border-primary/25 hover:-translate-y-0.5",
+      glowEnabled && "card-glow border-glow hover:shadow-[0_0_25px_hsl(142_76%_46%/0.1)]"
+    )}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-lg font-semibold">{workout.name}</CardTitle>
+          <CardTitle className="text-lg font-bold">{workout.name}</CardTitle>
           <Button
             variant="ghost"
             size="icon"
@@ -49,7 +55,7 @@ export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-4">
-          {exerciseNames.join(' • ')}
+          {exerciseNames.join(' · ')}
           {workout.exercises.length > 3 && ` +${workout.exercises.length - 3} more`}
         </p>
         <div className="flex items-center justify-between">
@@ -59,6 +65,7 @@ export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
           <Button
             size="sm"
             onClick={onStart}
+            glow={glowEnabled}
             className="gap-2"
           >
             <Play className="w-4 h-4" />
