@@ -43,16 +43,17 @@ export default function AuthGate() {
 
   return (
     <div className="dark min-h-screen bg-background flex flex-col items-center justify-center px-6">
-      {/* Glow backdrop */}
+      {/* Layered glow backdrop */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] rounded-full bg-primary/8 blur-[120px]" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/6 blur-[150px]" />
+        <div className="absolute bottom-1/3 left-1/2 -translate-x-1/2 w-[300px] h-[300px] rounded-full bg-primary/4 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-10 w-full max-w-xs">
+      <div className="relative z-10 flex flex-col items-center gap-12 w-full max-w-xs">
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-4">
           <R1SELogo className="text-5xl text-primary" />
-          <p className="text-muted-foreground text-sm tracking-wide">
+          <p className="text-muted-foreground text-sm tracking-widest uppercase font-medium">
             Train smarter. Rise stronger.
           </p>
         </div>
@@ -64,7 +65,7 @@ export default function AuthGate() {
             onClick={handleAuth}
             disabled={loading}
             glow
-            className="w-full h-12 text-base font-semibold gap-2"
+            className="w-full h-13 text-base font-semibold gap-2"
           >
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -75,11 +76,11 @@ export default function AuthGate() {
           </Button>
 
           <Button
-            variant="secondary"
+            variant="outline"
             size="lg"
             onClick={handleAuth}
             disabled={loading}
-            className="w-full h-12 text-base font-medium gap-2"
+            className="w-full h-13 text-base font-medium gap-2"
           >
             <GoogleIcon />
             Login with Google

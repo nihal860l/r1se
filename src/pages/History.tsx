@@ -8,6 +8,8 @@ import { Calendar, Clock, Dumbbell, Trash2, CalendarDays, List } from 'lucide-re
 import { format } from 'date-fns';
 import { INTENSITY_LABELS, SET_TYPE_LABELS } from '@/types/workout';
 import { useToast } from '@/hooks/use-toast';
+import { useGlowStore } from '@/store/glowStore';
+import { cn } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +29,7 @@ const History = () => {
   const deleteWorkoutLog = useWorkoutStore((state) => state.deleteWorkoutLog);
   const updateWorkoutLog = useWorkoutStore((state) => state.updateWorkoutLog);
   const { toast } = useToast();
+  const glowEnabled = useGlowStore((s) => s.glowEnabled);
   
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
@@ -44,17 +47,17 @@ const History = () => {
   return (
     <Layout>
       <div className="container max-w-lg animate-fade-in px-4">
-        <div className="pt-4 pb-4 flex items-center justify-between">
+        <div className="pt-6 pb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">History</h2>
+            <h2 className="text-xl font-bold tracking-tight">History</h2>
             <p className="text-sm text-muted-foreground">Your completed workouts</p>
           </div>
           {/* View Switcher */}
-          <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-secondary rounded-xl p-1">
             <Button
               variant={viewMode === 'calendar' ? 'default' : 'ghost'}
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-lg"
               onClick={() => setViewMode('calendar')}
             >
               <CalendarDays className="w-4 h-4" />
@@ -62,7 +65,7 @@ const History = () => {
             <Button
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-lg"
               onClick={() => setViewMode('list')}
             >
               <List className="w-4 h-4" />
@@ -72,10 +75,10 @@ const History = () => {
 
         {workoutLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
               <Calendar className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="font-medium text-lg mb-1">No history yet</h3>
+            <h3 className="font-bold text-lg mb-1">No history yet</h3>
             <p className="text-muted-foreground text-sm max-w-xs">
               Complete a workout to see it logged here.
             </p>
@@ -83,15 +86,16 @@ const History = () => {
         ) : viewMode === 'calendar' ? (
           <WorkoutHistoryCalendar workoutLogs={workoutLogs} onDelete={handleDelete} />
         ) : (
-          /* List View */
           <div className="space-y-3">
             {workoutLogs.map((log) => (
               <Card 
                 key={log.id} 
-                className="bg-card relative cursor-pointer hover:bg-accent/10 transition-colors"
+                className={cn(
+                  "relative cursor-pointer transition-all duration-300 hover:border-primary/25 hover:-translate-y-0.5",
+                  glowEnabled && "hover:shadow-[0_0_20px_hsl(142_76%_46%/0.06)]"
+                )}
                 onClick={() => setSelectedLog(log)}
               >
-                {/* Delete Button */}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -106,8 +110,8 @@ const History = () => {
                 
                 <CardHeader className="pb-2 pr-12">
                   <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg font-semibold">{log.workoutName}</CardTitle>
-                    <Badge variant="secondary" className="shrink-0">
+                    <CardTitle className="text-lg font-bold">{log.workoutName}</CardTitle>
+                    <Badge variant="secondary" className="shrink-0 rounded-lg">
                       <Clock className="w-3 h-3 mr-1" />
                       {log.duration} min
                     </Badge>
@@ -134,7 +138,6 @@ const History = () => {
         )}
       </div>
 
-      {/* Detail Dialog for List View */}
       <WorkoutHistoryDetail
         log={selectedLog}
         open={selectedLog !== null}
@@ -143,7 +146,6 @@ const History = () => {
         onEdit={(log) => { updateWorkoutLog(log.id, log); setSelectedLog(null); }}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirm !== null} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

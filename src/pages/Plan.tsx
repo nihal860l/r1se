@@ -2,7 +2,7 @@
  import { Layout } from '@/components/Layout';
  import { useGlowStore } from '@/store/glowStore';
  import { Card, CardContent } from '@/components/ui/card';
- import { Dumbbell, Calendar, Library } from 'lucide-react';
+ import { Dumbbell, Calendar, Library, ChevronRight } from 'lucide-react';
  import { cn } from '@/lib/utils';
  
  const Plan = () => {
@@ -33,26 +33,33 @@
    return (
      <Layout>
        <div className="container max-w-lg animate-fade-in px-4">
-         <div className="pt-4 pb-4">
-           <h2 className="text-xl font-semibold">Plan</h2>
+         <div className="pt-6 pb-4">
+           <h2 className="text-xl font-bold tracking-tight">Plan</h2>
            <p className="text-sm text-muted-foreground">Manage your training</p>
          </div>
  
-         <div className="space-y-4">
+         <div className="space-y-3">
            {planOptions.map((option) => (
               <Card 
                 key={option.path}
-                className={cn("bg-card border-border cursor-pointer card-hover", glowEnabled && "card-glow border-glow")}
+                className={cn(
+                  "bg-card cursor-pointer group transition-all duration-300 hover:border-primary/30 hover:-translate-y-0.5",
+                  glowEnabled && "card-glow border-glow hover:shadow-[0_0_25px_hsl(142_76%_46%/0.1)]"
+                )}
                onClick={() => navigate(option.path)}
              >
-               <CardContent className="flex items-center gap-4 p-6">
-                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+               <CardContent className="flex items-center gap-4 p-5">
+                 <div className={cn(
+                   "w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-primary/15",
+                   glowEnabled && "group-hover:shadow-[0_0_16px_hsl(142_76%_46%/0.15)]"
+                 )}>
                    <option.icon className="w-6 h-6 text-primary" />
                  </div>
-                 <div>
-                   <h3 className="font-semibold text-lg">{option.title}</h3>
+                 <div className="flex-1">
+                   <h3 className="font-bold text-base">{option.title}</h3>
                    <p className="text-sm text-muted-foreground">{option.description}</p>
                  </div>
+                 <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                </CardContent>
              </Card>
            ))}
