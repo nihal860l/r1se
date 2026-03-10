@@ -14,6 +14,7 @@ import History from "./pages/History";
 import CreateWorkout from "./pages/CreateWorkout";
 import ActiveWorkout from "./pages/ActiveWorkout";
 import Progress from "./pages/Progress";
+import CoachDashboard from "./pages/CoachDashboard";
 import NotFound from "./pages/NotFound";
 import AuthGate from "./pages/AuthGate";
 import { CloudSyncProvider } from "./components/CloudSyncProvider";
@@ -32,6 +33,7 @@ const AuthenticatedRoutes = () => (
     <Route path="/history" element={<History />} />
     <Route path="/create-workout" element={<CreateWorkout />} />
     <Route path="/workout/:workoutId" element={<ActiveWorkout />} />
+    <Route path="/coach" element={<CoachDashboard />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
