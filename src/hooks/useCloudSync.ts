@@ -188,75 +188,138 @@ export function useCloudSync() {
     }
   }, [user, customExercises, workouts, workoutLogs, workoutPlans, pushExercise, pushWorkout, pushWorkoutLog, pushWorkoutPlan]);
 
-  // Download cloud data and replace local state (ONE-TIME on initial login)
-  const hydrateFromCloud = useCallback(async () => {
-    if (!user || syncInProgress.current || hasHydrated.current) return;
+  // MERGE cloud + local data (never overwrites local changes)
+  const mergeFromCloud = useCallback(async () => {
+    if (!user || syncInProgress.current) return;
+    if (hasUserHydrated(user.id)) return;
     syncInProgress.current = true;
     try {
+      const localState = useWorkoutStore.getState();
+
+      // --- Exercises: merge by exercise_id ---
       const { data: cloudExercises } = await supabase.from('exercises').select('*').eq('user_id', user.id);
-      if (cloudExercises && cloudExercises.length > 0) {
-        const exercises: Exercise[] = cloudExercises.map((e) => {
-          const muscles = e.muscle_group.split(' / ').map((s: string) => s.trim()).filter(Boolean);
-          return {
-            id: e.exercise_id, name: e.name, muscles,
-            keywords: generateKeywords(e.name, muscles),
-            isDefault: false, muscleGroup: muscles[0] || e.muscle_group,
-            category: e.category || muscleToCategory(muscles[0] || ''),
-            description: e.description || e.name, isCustom: e.is_custom,
-          };
-        });
-        useWorkoutStore.setState({ customExercises: exercises });
+      const cloudExMap = new Map((cloudExercises || []).map(e => [e.exercise_id, e]));
+      const localExMap = new Map(localState.customExercises.map(e => [e.id, e]));
+
+      // Cloud-only exercises → add to local
+      const mergedExercises = [...localState.customExercises];
+      for (const ce of (cloudExercises || [])) {
+        if (!localExMap.has(ce.exercise_id)) {
+          const muscles = ce.muscle_group.split(' / ').map((s: string) => s.trim()).filter(Boolean);
+          mergedExercises.push({
+            id: ce.exercise_id, name: ce.name, muscles,
+            keywords: generateKeywords(ce.name, muscles),
+            isDefault: false, muscleGroup: muscles[0] || ce.muscle_group,
+            category: ce.category || muscleToCategory(muscles[0] || ''),
+            description: ce.description || ce.name, isCustom: ce.is_custom,
+          });
+        }
+      }
+      useWorkoutStore.setState({ customExercises: mergedExercises });
+      // Local-only exercises → push to cloud
+      for (const le of localState.customExercises) {
+        if (!cloudExMap.has(le.id)) await pushExercise(le);
       }
 
+      // --- Workouts: merge by workout_id ---
       const { data: cloudWorkouts } = await supabase.from('workouts').select('*').eq('user_id', user.id);
-      if (cloudWorkouts && cloudWorkouts.length > 0) {
-        const workoutsData: Workout[] = cloudWorkouts.map((w) => ({
-          id: w.workout_id, name: w.name,
-          exercises: w.exercises as unknown as Workout['exercises'],
-          createdAt: new Date(w.created_at),
-        }));
-        useWorkoutStore.setState({ workouts: workoutsData });
+      const cloudWkMap = new Map((cloudWorkouts || []).map(w => [w.workout_id, w]));
+      const localWkMap = new Map(localState.workouts.map(w => [w.id, w]));
+
+      const mergedWorkouts = [...localState.workouts];
+      for (const cw of (cloudWorkouts || [])) {
+        if (!localWkMap.has(cw.workout_id)) {
+          mergedWorkouts.push({
+            id: cw.workout_id, name: cw.name,
+            exercises: cw.exercises as unknown as Workout['exercises'],
+            createdAt: new Date(cw.created_at),
+          });
+        }
+      }
+      useWorkoutStore.setState({ workouts: mergedWorkouts });
+      for (const lw of localState.workouts) {
+        if (!cloudWkMap.has(lw.id)) await pushWorkout(lw);
       }
 
-      const { data: cloudHistory } = await supabase.from('workout_history').select('*').eq('user_id', user.id).order('completed_at', { ascending: false });
-      if (cloudHistory && cloudHistory.length > 0) {
-        const historyData: WorkoutLog[] = cloudHistory.map((h) => ({
-          id: h.history_id, workoutId: h.workout_template_id || '',
-          workoutName: h.workout_name, completedAt: new Date(h.completed_at),
-          duration: h.duration, exercises: h.exercises as unknown as WorkoutLog['exercises'],
-        }));
-        useWorkoutStore.setState({ workoutLogs: historyData });
+      // --- History: merge by history_id ---
+      const { data: cloudHistory } = await supabase.from('workout_history').select('*').eq('user_id', user.id);
+      const cloudHMap = new Map((cloudHistory || []).map(h => [h.history_id, h]));
+      const localHMap = new Map(localState.workoutLogs.map(h => [h.id, h]));
+
+      const mergedHistory = [...localState.workoutLogs];
+      for (const ch of (cloudHistory || [])) {
+        if (!localHMap.has(ch.history_id)) {
+          mergedHistory.push({
+            id: ch.history_id, workoutId: ch.workout_template_id || '',
+            workoutName: ch.workout_name, completedAt: new Date(ch.completed_at),
+            duration: ch.duration, exercises: ch.exercises as unknown as WorkoutLog['exercises'],
+          });
+        }
+      }
+      useWorkoutStore.setState({ workoutLogs: mergedHistory });
+      for (const lh of localState.workoutLogs) {
+        if (!cloudHMap.has(lh.id)) await pushWorkoutLog(lh);
       }
 
-      // Load ALL plans (multi-plan support)
-      const { data: cloudPlans } = await supabase.from('workout_plans').select('*').eq('user_id', user.id).order('updated_at', { ascending: false });
-      if (cloudPlans && cloudPlans.length > 0) {
-        const plansData: WorkoutPlan[] = cloudPlans.map((p) => ({
-          id: p.id, planId: p.plan_id, name: p.name,
-          startDate: p.start_date, endDate: p.end_date,
-          weeklyAssignments: p.weekly_assignments as unknown as WeeklyAssignments,
-          exceptions: (p.exceptions as unknown as PlanException[]) || [],
-          createdAt: new Date(p.created_at), updatedAt: new Date(p.updated_at),
-          isActive: p.is_active ?? false,
-        }));
-        
-        // Find active plan or default to first
-        const activePlan = plansData.find((p) => p.isActive) || plansData[0];
-        useWorkoutStore.setState({ 
-          workoutPlans: plansData,
-          activePlanId: activePlan?.planId || null,
-        });
+      // --- Plans: merge by plan_id, latest updatedAt wins for conflicts ---
+      const { data: cloudPlans } = await supabase.from('workout_plans').select('*').eq('user_id', user.id);
+      const cloudPlanMap = new Map((cloudPlans || []).map(p => [p.plan_id, p]));
+      const localPlanMap = new Map(localState.workoutPlans.map(p => [p.planId, p]));
+
+      const mergedPlans: WorkoutPlan[] = [];
+      // Start with local plans (prefer local if newer or same)
+      for (const lp of localState.workoutPlans) {
+        const cp = cloudPlanMap.get(lp.planId);
+        if (!cp) {
+          mergedPlans.push(lp);
+          await pushWorkoutPlan(lp); // upload local-only plan
+        } else {
+          const localTime = lp.updatedAt instanceof Date ? lp.updatedAt.getTime() : new Date(lp.updatedAt as any).getTime();
+          const cloudTime = new Date(cp.updated_at).getTime();
+          if (localTime >= cloudTime) {
+            mergedPlans.push(lp);
+            await pushWorkoutPlan(lp); // push newer local version
+          } else {
+            mergedPlans.push({
+              id: cp.id, planId: cp.plan_id, name: cp.name,
+              startDate: cp.start_date, endDate: cp.end_date,
+              weeklyAssignments: cp.weekly_assignments as unknown as WeeklyAssignments,
+              exceptions: (cp.exceptions as unknown as PlanException[]) || [],
+              createdAt: new Date(cp.created_at), updatedAt: new Date(cp.updated_at),
+              isActive: cp.is_active ?? false,
+            });
+          }
+        }
+      }
+      // Cloud-only plans → add to local
+      for (const cp of (cloudPlans || [])) {
+        if (!localPlanMap.has(cp.plan_id)) {
+          mergedPlans.push({
+            id: cp.id, planId: cp.plan_id, name: cp.name,
+            startDate: cp.start_date, endDate: cp.end_date,
+            weeklyAssignments: cp.weekly_assignments as unknown as WeeklyAssignments,
+            exceptions: (cp.exceptions as unknown as PlanException[]) || [],
+            createdAt: new Date(cp.created_at), updatedAt: new Date(cp.updated_at),
+            isActive: cp.is_active ?? false,
+          });
+        }
       }
 
-      hasHydrated.current = true;
+      const activePlan = mergedPlans.find(p => p.isActive) || mergedPlans[0];
+      useWorkoutStore.setState({
+        workoutPlans: mergedPlans,
+        activePlanId: activePlan?.planId || localState.activePlanId,
+      });
+
+      setUserHydrated(user.id);
       lastSyncTime.current = Date.now();
-      toast({ title: 'Synced!', description: 'Your data has been restored from the cloud.' });
+      toast({ title: 'Synced!', description: 'Your data has been merged with the cloud.' });
     } catch (error) {
-      console.error('Hydration from cloud failed:', error);
+      console.error('Merge from cloud failed:', error);
     } finally {
       syncInProgress.current = false;
     }
-  }, [user, toast]);
+  }, [user, toast, pushExercise, pushWorkout, pushWorkoutLog, pushWorkoutPlan]);
 
   // Initial sync on login
   useEffect(() => {
