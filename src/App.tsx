@@ -33,6 +33,7 @@ const AuthenticatedRoutes = () => (
     <Route path="/history" element={<History />} />
     <Route path="/create-workout" element={<CreateWorkout />} />
     <Route path="/workout/:workoutId" element={<ActiveWorkout />} />
+    <Route path="/coach" element={<CoachDashboard />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
