@@ -38,6 +38,48 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          external_link: string | null
+          id: string
+          is_verified: boolean
+          pinned_program_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name: string
+          external_link?: string | null
+          id?: string
+          is_verified?: boolean
+          pinned_program_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          external_link?: string | null
+          id?: string
+          is_verified?: boolean
+          pinned_program_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           category: string
@@ -139,6 +181,248 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      program_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          program_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          program_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          program_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      program_follows: {
+        Row: {
+          created_at: string
+          id: string
+          imported_manifest: Json
+          is_scheduled: boolean
+          program_id: string
+          program_version: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imported_manifest?: Json
+          is_scheduled?: boolean
+          program_id: string
+          program_version?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imported_manifest?: Json
+          is_scheduled?: boolean
+          program_id?: string
+          program_version?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      program_purchases: {
+        Row: {
+          amount: number
+          checkout_token: string | null
+          confirmed_at: string | null
+          created_at: string
+          currency: string
+          id: string
+          program_id: string
+          program_version: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          checkout_token?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          program_id: string
+          program_version?: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          checkout_token?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          program_id?: string
+          program_version?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      program_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          program_id: string
+          reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          program_id: string
+          reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          program_id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      program_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          is_flagged: boolean
+          program_id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_flagged?: boolean
+          program_id: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_flagged?: boolean
+          program_id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      programs: {
+        Row: {
+          banner_image_url: string | null
+          category_tags: string[]
+          coach_id: string
+          created_at: string
+          currency: string | null
+          days_per_week: number | null
+          difficulty: string
+          equipment_tags: string[]
+          id: string
+          long_description: string | null
+          manifest: Json
+          preview_weeks: number
+          price_amount: number | null
+          program_id: string
+          promo_video_url: string | null
+          published_at: string | null
+          short_description: string | null
+          status: string
+          title: string
+          total_weeks: number | null
+          updated_at: string
+          version_number: number
+          visibility: string
+        }
+        Insert: {
+          banner_image_url?: string | null
+          category_tags?: string[]
+          coach_id: string
+          created_at?: string
+          currency?: string | null
+          days_per_week?: number | null
+          difficulty?: string
+          equipment_tags?: string[]
+          id?: string
+          long_description?: string | null
+          manifest?: Json
+          preview_weeks?: number
+          price_amount?: number | null
+          program_id: string
+          promo_video_url?: string | null
+          published_at?: string | null
+          short_description?: string | null
+          status?: string
+          title: string
+          total_weeks?: number | null
+          updated_at?: string
+          version_number?: number
+          visibility?: string
+        }
+        Update: {
+          banner_image_url?: string | null
+          category_tags?: string[]
+          coach_id?: string
+          created_at?: string
+          currency?: string | null
+          days_per_week?: number | null
+          difficulty?: string
+          equipment_tags?: string[]
+          id?: string
+          long_description?: string | null
+          manifest?: Json
+          preview_weeks?: number
+          price_amount?: number | null
+          program_id?: string
+          promo_video_url?: string | null
+          published_at?: string | null
+          short_description?: string | null
+          status?: string
+          title?: string
+          total_weeks?: number | null
+          updated_at?: string
+          version_number?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programs_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "coach_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       workout_history: {
         Row: {
