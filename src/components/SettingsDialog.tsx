@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, LogOut, Trash2, RotateCcw, Sparkles } from 'lucide-react';
+import { Settings, LogOut, Trash2, RotateCcw, Sparkles, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,15 +24,21 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { useGlowStore } from '@/store/glowStore';
+import { useCoachProfile } from '@/hooks/useCoachProfile';
+import { BecomeCoachDialog } from './BecomeCoachDialog';
+import { useNavigate } from 'react-router-dom';
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const [resetExercisesConfirm, setResetExercisesConfirm] = useState(false);
   const [resetWorkoutsConfirm, setResetWorkoutsConfirm] = useState(false);
+  const [coachDialogOpen, setCoachDialogOpen] = useState(false);
+  const [disableCoachConfirm, setDisableCoachConfirm] = useState(false);
   
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { glowEnabled, setGlowEnabled } = useGlowStore();
+  const { isCoach, deleteProfile, refetch } = useCoachProfile();
 
   const handleResetExercises = () => {
     useWorkoutStore.setState({
@@ -64,6 +70,24 @@ export function SettingsDialog() {
       title: 'Signed Out',
       description: 'You have been signed out. Your local data is preserved.',
     });
+  };
+
+  const handleCoachToggle = (checked: boolean) => {
+    if (checked) {
+      setCoachDialogOpen(true);
+    } else {
+      setDisableCoachConfirm(true);
+    }
+  };
+
+  const handleDisableCoach = async () => {
+    const result = await deleteProfile();
+    setDisableCoachConfirm(false);
+    if (result.error) {
+      toast({ title: 'Error', description: 'Could not disable coach mode.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Coach Mode Disabled', description: 'Your published programs remain available.' });
+    }
   };
 
   const displayName = user?.user_metadata?.full_name || user?.email || 'User';
@@ -109,6 +133,35 @@ export function SettingsDialog() {
               <Switch checked={glowEnabled} onCheckedChange={setGlowEnabled} />
             </div>
 
+            {/* Become a Coach Toggle */}
+            {user && (
+              <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">Become a Coach</p>
+                    <p className="text-xs text-muted-foreground">Create & sell workout programs</p>
+                  </div>
+                </div>
+                <Switch checked={isCoach} onCheckedChange={handleCoachToggle} />
+              </div>
+            )}
+
+            {/* Coach Dashboard Link */}
+            {isCoach && (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2 border-primary/30 text-primary"
+                onClick={() => {
+                  setOpen(false);
+                  window.location.href = '/coach';
+                }}
+              >
+                <Award className="w-4 h-4" />
+                Coach Dashboard
+              </Button>
+            )}
+
             {/* Reset Options */}
             <div className="space-y-2">
               <Button
@@ -144,6 +197,31 @@ export function SettingsDialog() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Become a Coach Dialog */}
+      <BecomeCoachDialog
+        open={coachDialogOpen}
+        onOpenChange={setCoachDialogOpen}
+        onSuccess={refetch}
+      />
+
+      {/* Disable Coach Confirmation */}
+      <AlertDialog open={disableCoachConfirm} onOpenChange={setDisableCoachConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disable Coach Mode?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your coach profile will be removed. Any published programs will remain available in the marketplace.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDisableCoach} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Disable
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Reset Exercises Confirmation */}
       <AlertDialog open={resetExercisesConfirm} onOpenChange={setResetExercisesConfirm}>
