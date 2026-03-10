@@ -26,7 +26,7 @@ export function ExerciseCard({ exercise, onClick, selected, showEdit = true }: E
       <Card
         className={`cursor-pointer transition-all duration-200 ${
           selected
-            ? 'ring-2 ring-primary bg-primary/5'
+            ? 'ring-2 ring-primary bg-primary/15 shadow-[0_0_12px_hsl(var(--primary)/0.25)] border-primary/40'
             : 'hover:bg-secondary/50'
         }`}
         onClick={onClick}
