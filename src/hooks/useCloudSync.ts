@@ -321,14 +321,11 @@ export function useCloudSync() {
     }
   }, [user, toast, pushExercise, pushWorkout, pushWorkoutLog, pushWorkoutPlan]);
 
-  // Initial sync on login
+  // Initial sync on login - merge-based
   useEffect(() => {
-    if (!user || !session || hasHydrated.current) return;
-    if (!isOnline()) {
-      // Offline at login - skip hydration, use local data
-      hasHydrated.current = true;
-      return;
-    }
+    if (!user || !session) return;
+    if (hasUserHydrated(user.id)) return;
+    if (!isOnline()) return; // will sync when back online via queue processor
 
     const performInitialSync = async () => {
       const { count } = await supabase.from('workouts').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
@@ -339,15 +336,15 @@ export function useCloudSync() {
       const hasCloudData = (count && count > 0) || (exerciseCount && exerciseCount > 0) || (historyCount && historyCount > 0) || (planCount && planCount > 0);
 
       if (hasCloudData) {
-        await hydrateFromCloud();
+        await mergeFromCloud();
       } else {
-        hasHydrated.current = true;
+        setUserHydrated(user.id);
         await uploadAllToCloud();
       }
     };
 
     performInitialSync();
-  }, [user, session, hydrateFromCloud, uploadAllToCloud]);
+  }, [user, session, mergeFromCloud, uploadAllToCloud]);
 
   return {
     pushWorkout, pushExercise, pushWorkoutLog, pushWorkoutPlan,
