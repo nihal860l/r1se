@@ -36,7 +36,6 @@ export function useCloudSync() {
   const { toast } = useToast();
   const syncInProgress = useRef(false);
   const lastSyncTime = useRef<number>(0);
-  const hasHydrated = useRef(false);
   const enqueue = useSyncQueueStore((s) => s.enqueue);
 
   const workouts = useWorkoutStore((state) => state.workouts);
