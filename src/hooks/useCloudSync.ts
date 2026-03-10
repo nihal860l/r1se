@@ -13,10 +13,22 @@ import { useSyncQueueStore } from '@/store/syncQueueStore';
  * 
  * When online: push directly to cloud.
  * When offline: enqueue operations for later processing.
+ * On reconnect: merge local + cloud data (latest wins), never overwrite local changes.
  */
 
 function isOnline(): boolean {
   return navigator.onLine;
+}
+
+// Persist hydration state per user in localStorage so it survives remounts/reloads
+function getHydratedKey(userId: string) {
+  return `cloud-sync-hydrated-${userId}`;
+}
+function hasUserHydrated(userId: string): boolean {
+  return localStorage.getItem(getHydratedKey(userId)) === 'true';
+}
+function setUserHydrated(userId: string) {
+  localStorage.setItem(getHydratedKey(userId), 'true');
 }
 
 export function useCloudSync() {
