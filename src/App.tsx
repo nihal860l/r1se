@@ -16,6 +16,8 @@ import ActiveWorkout from "./pages/ActiveWorkout";
 import Progress from "./pages/Progress";
 import CoachDashboard from "./pages/CoachDashboard";
 import ProgramBuilder from "./pages/ProgramBuilder";
+import Marketplace from "./pages/Marketplace";
+import ProgramDetail from "./pages/ProgramDetail";
 import NotFound from "./pages/NotFound";
 import AuthGate from "./pages/AuthGate";
 import { CloudSyncProvider } from "./components/CloudSyncProvider";
@@ -36,6 +38,8 @@ const AuthenticatedRoutes = () => (
     <Route path="/workout/:workoutId" element={<ActiveWorkout />} />
     <Route path="/coach" element={<CoachDashboard />} />
     <Route path="/coach/program/new" element={<ProgramBuilder />} />
+    <Route path="/marketplace" element={<Marketplace />} />
+    <Route path="/marketplace/:programId" element={<ProgramDetail />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

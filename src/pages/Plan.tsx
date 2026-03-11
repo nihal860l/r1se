@@ -2,8 +2,8 @@
  import { Layout } from '@/components/Layout';
  import { useGlowStore } from '@/store/glowStore';
  import { Card, CardContent } from '@/components/ui/card';
- import { Dumbbell, Calendar, Library, ChevronRight } from 'lucide-react';
- import { cn } from '@/lib/utils';
+import { Dumbbell, Calendar, Library, ChevronRight, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
  
  const Plan = () => {
   const navigate = useNavigate();
@@ -27,6 +27,13 @@
        description: 'Browse & manage exercises',
        icon: Library,
        path: '/exercises',
+     },
+     {
+       title: 'Discover Programs',
+       description: 'Get the best workout plans',
+       icon: Sparkles,
+       path: '/marketplace',
+       accent: true,
      },
    ];
  
