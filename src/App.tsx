@@ -16,6 +16,8 @@ import ActiveWorkout from "./pages/ActiveWorkout";
 import Progress from "./pages/Progress";
 import CoachDashboard from "./pages/CoachDashboard";
 import ProgramBuilder from "./pages/ProgramBuilder";
+import Marketplace from "./pages/Marketplace";
+import ProgramDetail from "./pages/ProgramDetail";
 import NotFound from "./pages/NotFound";
 import AuthGate from "./pages/AuthGate";
 import { CloudSyncProvider } from "./components/CloudSyncProvider";
