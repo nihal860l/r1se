@@ -28,6 +28,13 @@ import { cn } from '@/lib/utils';
        icon: Library,
        path: '/exercises',
      },
+     {
+       title: 'Discover Programs',
+       description: 'Get the best workout plans',
+       icon: Sparkles,
+       path: '/marketplace',
+       accent: true,
+     },
    ];
  
    return (
