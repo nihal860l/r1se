@@ -14,7 +14,7 @@ import { ArrowLeft, Plus, Trash2, GripVertical, ChevronDown, ChevronRight, Save,
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useGlowStore } from '@/store/glowStore';
-import { DEFAULT_EXERCISES } from '@/data/exercises';
+import { exercises as DEFAULT_EXERCISES } from '@/data/exercises';
 import { useWorkoutStore } from '@/store/workoutStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
