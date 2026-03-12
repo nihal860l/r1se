@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useCoachProfile } from '@/hooks/useCoachProfile';
-import { usePrograms, ProgramWeek, ProgramWeekDay, ProgramExercise, ProgramSet } from '@/hooks/usePrograms';
+import { usePrograms, ProgramWeek, ProgramWeekDay } from '@/hooks/usePrograms';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,13 +10,25 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Plus, Trash2, GripVertical, ChevronDown, ChevronRight, Save, Send, Dumbbell } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, Plus, Trash2, Save, Send, Dumbbell, Copy, Infinity, ChevronRight, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useGlowStore } from '@/store/glowStore';
-import { exercises as DEFAULT_EXERCISES } from '@/data/exercises';
-import { useWorkoutStore } from '@/store/workoutStore';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DayWorkoutEditor } from '@/components/DayWorkoutEditor';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const CATEGORY_OPTIONS = ['Hypertrophy', 'Strength', 'Calisthenics', 'Mobility', 'Full Body', 'Split', 'HIIT', 'Endurance'];
 const EQUIPMENT_OPTIONS = ['Gym', 'Bodyweight', 'Home', 'Dumbbells', 'Bands', 'Kettlebell'];
@@ -30,11 +42,10 @@ export default function ProgramBuilder() {
   const { isCoach, loading: coachLoading } = useCoachProfile();
   const { programs, createProgram, updateProgram, publishProgram, loading: programsLoading } = usePrograms();
   const glowEnabled = useGlowStore((s) => s.glowEnabled);
-  const customExercises = useWorkoutStore((s) => s.customExercises);
 
   const existingProgram = editId ? programs.find(p => p.program_id === editId) : null;
 
-  // Metadata state
+  // Metadata
   const [title, setTitle] = useState(existingProgram?.title || '');
   const [shortDesc, setShortDesc] = useState(existingProgram?.short_description || '');
   const [longDesc, setLongDesc] = useState(existingProgram?.long_description || '');
@@ -45,20 +56,28 @@ export default function ProgramBuilder() {
   const [priceAmount, setPriceAmount] = useState(existingProgram?.price_amount?.toString() || '');
   const [previewWeeks, setPreviewWeeks] = useState(existingProgram?.preview_weeks?.toString() || '0');
 
-  // Timeline state
+  // Timeline
   const [weeks, setWeeks] = useState<ProgramWeek[]>(existingProgram?.manifest || []);
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState(0);
   const [step, setStep] = useState<'metadata' | 'timeline' | 'review'>('metadata');
   const [saving, setSaving] = useState(false);
 
-  // Expanded state
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(new Set([0]));
-  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  // Day editor
+  const [editingDay, setEditingDay] = useState<{ weekIdx: number; dayIdx: number } | null>(null);
 
-  const allExercises = [...DEFAULT_EXERCISES, ...customExercises];
+  // Week settings dialog
+  const [weekSettingsIdx, setWeekSettingsIdx] = useState<number | null>(null);
+  const [weekSettingsLabel, setWeekSettingsLabel] = useState('');
+  const [weekSettingsPhase, setWeekSettingsPhase] = useState('');
+  const [weekSettingsInfinite, setWeekSettingsInfinite] = useState(false);
+
+  // Copy week dialog
+  const [copyWeekFrom, setCopyWeekFrom] = useState<number | null>(null);
+  const [copyWeekTo, setCopyWeekTo] = useState('');
 
   if (coachLoading || programsLoading) {
     return (
-      <Layout>
+      <Layout hideNav>
         <div className="container max-w-lg mx-auto px-4 py-8 flex justify-center">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
@@ -77,73 +96,62 @@ export default function ProgramBuilder() {
 
   const addWeek = () => {
     const weekNum = weeks.length + 1;
-    setWeeks([...weeks, {
+    const newWeek: ProgramWeek = {
       weekNumber: weekNum,
       label: `Week ${weekNum}`,
-      days: [{ label: 'Monday', workoutName: '', exercises: [] }],
-    }]);
-    setExpandedWeeks(prev => new Set([...prev, weeks.length]));
+      days: DAY_LABELS.map(label => ({ label, workoutName: '', exercises: [] })),
+    };
+    setWeeks(prev => [...prev, newWeek]);
+    setSelectedWeekIdx(weeks.length);
   };
 
   const removeWeek = (idx: number) => {
-    setWeeks(weeks.filter((_, i) => i !== idx).map((w, i) => ({ ...w, weekNumber: i + 1, label: `Week ${i + 1}` })));
+    setWeeks(prev => prev.filter((_, i) => i !== idx).map((w, i) => ({
+      ...w,
+      weekNumber: i + 1,
+      label: w.label.startsWith('Week ') ? `Week ${i + 1}` : w.label,
+    })));
+    if (selectedWeekIdx >= weeks.length - 1) setSelectedWeekIdx(Math.max(0, weeks.length - 2));
   };
 
-  const addDay = (weekIdx: number) => {
-    const updated = [...weeks];
-    const usedLabels = updated[weekIdx].days.map(d => d.label);
-    const nextLabel = DAY_LABELS.find(l => !usedLabels.includes(l)) || `Day ${updated[weekIdx].days.length + 1}`;
-    updated[weekIdx].days.push({ label: nextLabel, workoutName: '', exercises: [] });
-    setWeeks(updated);
+  const openWeekSettings = (idx: number) => {
+    const w = weeks[idx];
+    setWeekSettingsIdx(idx);
+    setWeekSettingsLabel(w.label);
+    setWeekSettingsPhase(w.phase || '');
+    setWeekSettingsInfinite(w.isInfinite || false);
   };
 
-  const removeDay = (weekIdx: number, dayIdx: number) => {
-    const updated = [...weeks];
-    updated[weekIdx].days = updated[weekIdx].days.filter((_, i) => i !== dayIdx);
-    setWeeks(updated);
+  const saveWeekSettings = () => {
+    if (weekSettingsIdx === null) return;
+    setWeeks(prev => prev.map((w, i) => i === weekSettingsIdx ? {
+      ...w,
+      label: weekSettingsLabel || w.label,
+      phase: weekSettingsPhase || undefined,
+      isInfinite: weekSettingsInfinite,
+    } : w));
+    setWeekSettingsIdx(null);
   };
 
-  const updateDay = (weekIdx: number, dayIdx: number, updates: Partial<ProgramWeekDay>) => {
-    const updated = [...weeks];
-    updated[weekIdx].days[dayIdx] = { ...updated[weekIdx].days[dayIdx], ...updates };
-    setWeeks(updated);
+  const handleCopyWeek = () => {
+    if (copyWeekFrom === null) return;
+    const targets = copyWeekTo.split(',').map(s => parseInt(s.trim()) - 1).filter(n => !isNaN(n) && n >= 0 && n < weeks.length && n !== copyWeekFrom);
+    if (targets.length === 0) { toast.error('Invalid target weeks'); return; }
+    const sourceWeek = weeks[copyWeekFrom];
+    setWeeks(prev => prev.map((w, i) => {
+      if (!targets.includes(i)) return w;
+      return { ...w, days: JSON.parse(JSON.stringify(sourceWeek.days)) };
+    }));
+    toast.success(`Copied to ${targets.length} week(s)`);
+    setCopyWeekFrom(null);
+    setCopyWeekTo('');
   };
 
-  const addExercise = (weekIdx: number, dayIdx: number, exercise: { id: string; name: string }) => {
-    const updated = [...weeks];
-    updated[weekIdx].days[dayIdx].exercises.push({
-      exerciseId: exercise.id,
-      exerciseName: exercise.name,
-      sets: [{ targetReps: 10, targetWeight: undefined, intensity: undefined, setType: 'normal' }],
-    });
-    setWeeks(updated);
-  };
-
-  const removeExercise = (weekIdx: number, dayIdx: number, exIdx: number) => {
-    const updated = [...weeks];
-    updated[weekIdx].days[dayIdx].exercises = updated[weekIdx].days[dayIdx].exercises.filter((_, i) => i !== exIdx);
-    setWeeks(updated);
-  };
-
-  const addSet = (weekIdx: number, dayIdx: number, exIdx: number) => {
-    const updated = [...weeks];
-    updated[weekIdx].days[dayIdx].exercises[exIdx].sets.push({ targetReps: 10 });
-    setWeeks(updated);
-  };
-
-  const removeSet = (weekIdx: number, dayIdx: number, exIdx: number, setIdx: number) => {
-    const updated = [...weeks];
-    updated[weekIdx].days[dayIdx].exercises[exIdx].sets = updated[weekIdx].days[dayIdx].exercises[exIdx].sets.filter((_, i) => i !== setIdx);
-    setWeeks(updated);
-  };
-
-  const updateSet = (weekIdx: number, dayIdx: number, exIdx: number, setIdx: number, updates: Partial<ProgramSet>) => {
-    const updated = [...weeks];
-    updated[weekIdx].days[dayIdx].exercises[exIdx].sets[setIdx] = {
-      ...updated[weekIdx].days[dayIdx].exercises[exIdx].sets[setIdx],
-      ...updates,
-    };
-    setWeeks(updated);
+  const updateDayWorkout = (weekIdx: number, dayIdx: number, day: ProgramWeekDay) => {
+    setWeeks(prev => prev.map((w, wi) => {
+      if (wi !== weekIdx) return w;
+      return { ...w, days: w.days.map((d, di) => di === dayIdx ? day : d) };
+    }));
   };
 
   const handleSave = async (publish = false) => {
@@ -162,7 +170,7 @@ export default function ProgramBuilder() {
         preview_weeks: parseInt(previewWeeks) || 0,
         manifest: weeks,
         total_weeks: weeks.length || undefined,
-        days_per_week: weeks.length > 0 ? Math.max(...weeks.map(w => w.days.length)) : undefined,
+        days_per_week: weeks.length > 0 ? Math.max(...weeks.map(w => w.days.filter(d => d.exercises.length > 0).length)) : undefined,
       };
 
       if (editId && existingProgram) {
@@ -194,21 +202,7 @@ export default function ProgramBuilder() {
     }
   };
 
-  const toggleWeek = (idx: number) => {
-    setExpandedWeeks(prev => {
-      const next = new Set(prev);
-      next.has(idx) ? next.delete(idx) : next.add(idx);
-      return next;
-    });
-  };
-
-  const toggleDay = (key: string) => {
-    setExpandedDays(prev => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
-  };
+  const currentWeek = weeks[selectedWeekIdx];
 
   return (
     <Layout hideNav>
@@ -218,10 +212,10 @@ export default function ProgramBuilder() {
           <Button variant="ghost" size="icon" onClick={() => navigate('/coach')}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold">{editId ? 'Edit Program' : 'Create Program'}</h1>
             <p className="text-xs text-muted-foreground">
-              {step === 'metadata' ? 'Step 1: Details' : step === 'timeline' ? 'Step 2: Timeline' : 'Step 3: Review'}
+              {step === 'metadata' ? 'Program Details' : step === 'timeline' ? 'Build Timeline' : 'Review & Publish'}
             </p>
           </div>
         </div>
@@ -239,24 +233,21 @@ export default function ProgramBuilder() {
           ))}
         </div>
 
-        {/* Step 1: Metadata */}
+        {/* ========== STEP 1: METADATA ========== */}
         {step === 'metadata' && (
           <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <Label>Title *</Label>
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. 12-Week Hypertrophy Program" />
             </div>
-
             <div className="space-y-2">
               <Label>Short Description</Label>
               <Input value={shortDesc} onChange={e => setShortDesc(e.target.value)} placeholder="Brief one-liner" maxLength={120} />
             </div>
-
             <div className="space-y-2">
               <Label>Full Description</Label>
               <Textarea value={longDesc} onChange={e => setLongDesc(e.target.value)} placeholder="Detailed program description..." rows={4} />
             </div>
-
             <div className="space-y-2">
               <Label>Difficulty</Label>
               <Select value={difficulty} onValueChange={setDifficulty}>
@@ -266,39 +257,26 @@ export default function ProgramBuilder() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label>Categories</Label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORY_OPTIONS.map(tag => (
-                  <Badge
-                    key={tag}
-                    variant={categoryTags.includes(tag) ? 'default' : 'outline'}
-                    className="cursor-pointer transition-colors"
-                    onClick={() => toggleTag(tag, categoryTags, setCategoryTags)}
-                  >
+                  <Badge key={tag} variant={categoryTags.includes(tag) ? 'default' : 'outline'} className="cursor-pointer transition-colors" onClick={() => toggleTag(tag, categoryTags, setCategoryTags)}>
                     {tag}
                   </Badge>
                 ))}
               </div>
             </div>
-
             <div className="space-y-2">
               <Label>Equipment</Label>
               <div className="flex flex-wrap gap-2">
                 {EQUIPMENT_OPTIONS.map(tag => (
-                  <Badge
-                    key={tag}
-                    variant={equipmentTags.includes(tag) ? 'default' : 'outline'}
-                    className="cursor-pointer transition-colors"
-                    onClick={() => toggleTag(tag, equipmentTags, setEquipmentTags)}
-                  >
+                  <Badge key={tag} variant={equipmentTags.includes(tag) ? 'default' : 'outline'} className="cursor-pointer transition-colors" onClick={() => toggleTag(tag, equipmentTags, setEquipmentTags)}>
                     {tag}
                   </Badge>
                 ))}
               </div>
             </div>
-
             <div className="space-y-2">
               <Label>Pricing</Label>
               <Select value={visibility} onValueChange={setVisibility}>
@@ -309,44 +287,146 @@ export default function ProgramBuilder() {
                 </SelectContent>
               </Select>
               {visibility === 'paid' && (
-                <Input
-                  type="number"
-                  value={priceAmount}
-                  onChange={e => setPriceAmount(e.target.value)}
-                  placeholder="Price (USD)"
-                  min="0"
-                  step="0.01"
-                  className="mt-2"
-                />
+                <Input type="number" value={priceAmount} onChange={e => setPriceAmount(e.target.value)} placeholder="Price (USD)" min="0" step="0.01" className="mt-2" />
               )}
             </div>
-
             <div className="space-y-2">
               <Label>Free Preview Weeks</Label>
-              <Input
-                type="number"
-                value={previewWeeks}
-                onChange={e => setPreviewWeeks(e.target.value)}
-                min="0"
-                max="52"
-              />
+              <Input type="number" value={previewWeeks} onChange={e => setPreviewWeeks(e.target.value)} min="0" max="52" />
             </div>
-
-            <Button className="w-full" onClick={() => {
-              if (!title.trim()) { toast.error('Title is required'); return; }
-              setStep('timeline');
-            }}>
-              Next: Build Timeline
+            <Button className="w-full" onClick={() => { if (!title.trim()) { toast.error('Title is required'); return; } setStep('timeline'); }}>
+              Next: Build Timeline <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
         )}
 
-        {/* Step 2: Timeline */}
+        {/* ========== STEP 2: TIMELINE ========== */}
         {step === 'timeline' && (
-          <div className="space-y-3 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
+            {/* Week pills - horizontal scrollable */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {weeks.map((week, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedWeekIdx(idx)}
+                  className={cn(
+                    "shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                    selectedWeekIdx === idx
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {week.isInfinite && <Infinity className="w-3 h-3" />}
+                  {week.phase ? `${week.phase}` : week.label}
+                  {week.rangeEnd && week.rangeEnd > week.weekNumber ? `–${week.rangeEnd}` : ''}
+                </button>
+              ))}
+              <button
+                onClick={addWeek}
+                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> Week
+              </button>
+            </div>
+
+            {/* Current week controls */}
+            {currentWeek && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-sm">
+                      {currentWeek.phase ? `${currentWeek.phase} · ` : ''}{currentWeek.label}
+                      {currentWeek.isInfinite && <span className="ml-1 text-primary">∞</span>}
+                    </h2>
+                    <p className="text-[10px] text-muted-foreground">
+                      {currentWeek.days.filter(d => d.exercises.length > 0).length} active days
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs">
+                          <Pencil className="w-3 h-3 mr-1" /> Options
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openWeekSettings(selectedWeekIdx)}>
+                          <Pencil className="w-3.5 h-3.5 mr-2" /> Rename / Phase
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setCopyWeekFrom(selectedWeekIdx); setCopyWeekTo(''); }}>
+                          <Copy className="w-3.5 h-3.5 mr-2" /> Copy to weeks...
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => removeWeek(selectedWeekIdx)}>
+                          <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Week
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Day cards */}
+                <div className="space-y-2">
+                  {currentWeek.days.map((day, dayIdx) => {
+                    const hasWorkout = day.exercises.length > 0;
+                    const totalSets = day.exercises.reduce((s, e) => s + e.sets.length, 0);
+                    return (
+                      <Card
+                        key={dayIdx}
+                        className={cn(
+                          "cursor-pointer transition-all hover:ring-1 hover:ring-primary/30",
+                          hasWorkout ? "bg-card/80" : "bg-card/40 border-dashed",
+                          glowEnabled && hasWorkout && "card-glow"
+                        )}
+                        onClick={() => setEditingDay({ weekIdx: selectedWeekIdx, dayIdx })}
+                      >
+                        <CardContent className="p-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
+                              hasWorkout ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                            )}>
+                              {day.label.slice(0, 2)}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{day.label}</p>
+                              {hasWorkout ? (
+                                <p className="text-[11px] text-muted-foreground">
+                                  {day.workoutName && <span className="text-foreground font-medium">{day.workoutName} · </span>}
+                                  {day.exercises.length} exercise{day.exercises.length !== 1 ? 's' : ''} · {totalSets} set{totalSets !== 1 ? 's' : ''}
+                                </p>
+                              ) : (
+                                <p className="text-[11px] text-muted-foreground">Tap to add workout</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {hasWorkout && (
+                              <div className="flex -space-x-1">
+                                {day.exercises.slice(0, 3).map((_, i) => (
+                                  <div key={i} className="w-4 h-4 rounded-full bg-primary/20 border border-background flex items-center justify-center">
+                                    <Dumbbell className="w-2 h-2 text-primary" />
+                                  </div>
+                                ))}
+                                {day.exercises.length > 3 && (
+                                  <div className="w-4 h-4 rounded-full bg-muted border border-background flex items-center justify-center">
+                                    <span className="text-[7px] text-muted-foreground">+{day.exercises.length - 3}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             {weeks.length === 0 && (
               <Card className="bg-card/60 border-dashed">
-                <CardContent className="p-6 text-center space-y-3">
+                <CardContent className="p-8 text-center space-y-3">
                   <p className="text-sm text-muted-foreground">No weeks yet. Add your first week to start building.</p>
                   <Button variant="outline" onClick={addWeek}>
                     <Plus className="w-4 h-4 mr-2" /> Add Week 1
@@ -355,146 +435,16 @@ export default function ProgramBuilder() {
               </Card>
             )}
 
-            {weeks.map((week, wi) => (
-              <Card key={wi} className={cn("bg-card/80", glowEnabled && "card-glow")}>
-                <CardContent className="p-0">
-                  {/* Week header */}
-                  <button
-                    className="w-full flex items-center justify-between p-4"
-                    onClick={() => toggleWeek(wi)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <GripVertical className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-semibold text-sm">{week.label}</span>
-                      <Badge variant="secondary" className="text-[10px]">{week.days.length} days</Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={e => { e.stopPropagation(); removeWeek(wi); }}>
-                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                      </Button>
-                      {expandedWeeks.has(wi) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    </div>
-                  </button>
-
-                  {expandedWeeks.has(wi) && (
-                    <div className="px-4 pb-4 space-y-2">
-                      {week.days.map((day, di) => {
-                        const dayKey = `${wi}-${di}`;
-                        return (
-                          <Card key={di} className="bg-muted/30">
-                            <CardContent className="p-0">
-                              <button
-                                className="w-full flex items-center justify-between p-3"
-                                onClick={() => toggleDay(dayKey)}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-medium">{day.label}</span>
-                                  {day.workoutName && <span className="text-xs text-muted-foreground">– {day.workoutName}</span>}
-                                  <Badge variant="outline" className="text-[9px]">{day.exercises.length} ex</Badge>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={e => { e.stopPropagation(); removeDay(wi, di); }}>
-                                    <Trash2 className="w-3 h-3 text-destructive" />
-                                  </Button>
-                                  {expandedDays.has(dayKey) ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                                </div>
-                              </button>
-
-                              {expandedDays.has(dayKey) && (
-                                <div className="px-3 pb-3 space-y-2">
-                                  <Input
-                                    placeholder="Workout name (e.g. Push Day)"
-                                    value={day.workoutName}
-                                    onChange={e => updateDay(wi, di, { workoutName: e.target.value })}
-                                    className="h-8 text-xs"
-                                  />
-                                  <Select value={day.label} onValueChange={v => updateDay(wi, di, { label: v })}>
-                                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      {DAY_LABELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
-
-                                  {/* Exercises */}
-                                  {day.exercises.map((ex, ei) => (
-                                    <Card key={ei} className="bg-background/50">
-                                      <CardContent className="p-2 space-y-1.5">
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex items-center gap-1.5">
-                                            <Dumbbell className="w-3 h-3 text-primary" />
-                                            <span className="text-xs font-medium">{ex.exerciseName}</span>
-                                          </div>
-                                          <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeExercise(wi, di, ei)}>
-                                            <Trash2 className="w-2.5 h-2.5 text-destructive" />
-                                          </Button>
-                                        </div>
-                                        {/* Sets */}
-                                        {ex.sets.map((set, si) => (
-                                          <div key={si} className="flex items-center gap-1.5">
-                                            <span className="text-[10px] text-muted-foreground w-4">S{si + 1}</span>
-                                            <Input
-                                              type="number"
-                                              placeholder="Reps"
-                                              value={set.targetReps || ''}
-                                              onChange={e => updateSet(wi, di, ei, si, { targetReps: parseInt(e.target.value) || undefined })}
-                                              className="h-6 text-[10px] w-16"
-                                            />
-                                            <Input
-                                              type="number"
-                                              placeholder="Kg"
-                                              value={set.targetWeight || ''}
-                                              onChange={e => updateSet(wi, di, ei, si, { targetWeight: parseFloat(e.target.value) || undefined })}
-                                              className="h-6 text-[10px] w-16"
-                                            />
-                                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => removeSet(wi, di, ei, si)}>
-                                              <Trash2 className="w-2 h-2 text-muted-foreground" />
-                                            </Button>
-                                          </div>
-                                        ))}
-                                        <Button variant="ghost" size="sm" className="h-5 text-[10px] w-full" onClick={() => addSet(wi, di, ei)}>
-                                          <Plus className="w-2.5 h-2.5 mr-1" /> Add Set
-                                        </Button>
-                                      </CardContent>
-                                    </Card>
-                                  ))}
-
-                                  {/* Add exercise picker */}
-                                  <ExercisePicker
-                                    exercises={allExercises}
-                                    onSelect={(ex) => addExercise(wi, di, ex)}
-                                  />
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-
-                      <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => addDay(wi)}>
-                        <Plus className="w-3 h-3 mr-1" /> Add Day
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-
-            <Button variant="outline" className="w-full" onClick={addWeek}>
-              <Plus className="w-4 h-4 mr-2" /> Add Week
-            </Button>
-
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setStep('metadata')}>
-                Back
-              </Button>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setStep('metadata')}>Back</Button>
               <Button className="flex-1" onClick={() => setStep('review')}>
-                Next: Review
+                Next: Review <ChevronRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </div>
         )}
 
-        {/* Step 3: Review */}
+        {/* ========== STEP 3: REVIEW ========== */}
         {step === 'review' && (
           <div className="space-y-4 animate-fade-in">
             <Card className="bg-card/80">
@@ -514,80 +464,105 @@ export default function ProgramBuilder() {
             {weeks.map((week, wi) => (
               <Card key={wi} className="bg-card/60">
                 <CardContent className="p-3">
-                  <p className="text-xs font-semibold mb-1">{week.label}</p>
-                  {week.days.map((day, di) => (
+                  <p className="text-xs font-semibold mb-1">
+                    {week.phase ? `${week.phase} · ` : ''}{week.label}
+                    {week.isInfinite && ' ∞'}
+                  </p>
+                  {week.days.filter(d => d.exercises.length > 0).map((day, di) => (
                     <div key={di} className="ml-2 mb-1">
                       <p className="text-[11px] text-muted-foreground">
                         {day.label}{day.workoutName ? ` — ${day.workoutName}` : ''}: {day.exercises.length} exercises, {day.exercises.reduce((s, e) => s + e.sets.length, 0)} sets
                       </p>
                     </div>
                   ))}
+                  {week.days.filter(d => d.exercises.length > 0).length === 0 && (
+                    <p className="text-[11px] text-muted-foreground ml-2 italic">No workouts</p>
+                  )}
                 </CardContent>
               </Card>
             ))}
 
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setStep('timeline')}>
-                Back
-              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setStep('timeline')}>Back</Button>
               <Button variant="outline" className="flex-1" onClick={() => handleSave(false)} disabled={saving}>
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Draft'}
+                <Save className="w-4 h-4 mr-2" /> {saving ? '...' : 'Draft'}
               </Button>
               <Button className="flex-1" onClick={() => handleSave(true)} disabled={saving}>
-                <Send className="w-4 h-4 mr-2" />
-                {saving ? '...' : 'Publish'}
+                <Send className="w-4 h-4 mr-2" /> {saving ? '...' : 'Publish'}
               </Button>
             </div>
           </div>
         )}
       </div>
-    </Layout>
-  );
-}
 
-// Exercise picker sub-component
-function ExercisePicker({ exercises, onSelect }: { exercises: any[]; onSelect: (ex: { id: string; name: string }) => void }) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-
-  const filtered = search
-    ? exercises.filter(e => e.name.toLowerCase().includes(search.toLowerCase())).slice(0, 30)
-    : exercises.slice(0, 30);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full text-xs">
-          <Plus className="w-3 h-3 mr-1" /> Add Exercise
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[70vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>Add Exercise</DialogTitle>
-        </DialogHeader>
-        <Input
-          placeholder="Search exercises..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="mb-2"
-          autoFocus
+      {/* Day Workout Editor - reuses exact same workout creation UX */}
+      {editingDay && currentWeek && (
+        <DayWorkoutEditor
+          open={true}
+          onOpenChange={(open) => { if (!open) setEditingDay(null); }}
+          day={currentWeek.days[editingDay.dayIdx]}
+          dayLabel={currentWeek.days[editingDay.dayIdx].label}
+          onSave={(updatedDay) => {
+            updateDayWorkout(editingDay.weekIdx, editingDay.dayIdx, updatedDay);
+            setEditingDay(null);
+          }}
         />
-        <div className="overflow-y-auto flex-1 space-y-1">
-          {filtered.map(ex => (
-            <button
-              key={ex.id}
-              className="w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-primary/10 transition-colors flex items-center gap-2"
-              onClick={() => { onSelect({ id: ex.id, name: ex.name }); setOpen(false); setSearch(''); }}
-            >
-              <Dumbbell className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span>{ex.name}</span>
-              <span className="text-[10px] text-muted-foreground ml-auto">{ex.muscleGroup}</span>
-            </button>
-          ))}
-          {filtered.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No exercises found</p>}
-        </div>
-      </DialogContent>
-    </Dialog>
+      )}
+
+      {/* Week Settings Dialog */}
+      <Dialog open={weekSettingsIdx !== null} onOpenChange={() => setWeekSettingsIdx(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Week Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Week Label</Label>
+              <Input value={weekSettingsLabel} onChange={e => setWeekSettingsLabel(e.target.value)} placeholder="Week 1" />
+            </div>
+            <div className="space-y-2">
+              <Label>Phase (optional)</Label>
+              <Input value={weekSettingsPhase} onChange={e => setWeekSettingsPhase(e.target.value)} placeholder="e.g. Hypertrophy, Strength, Deload" />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Infinite / Ongoing</Label>
+                <p className="text-[11px] text-muted-foreground">Marks this week as repeating indefinitely</p>
+              </div>
+              <Switch checked={weekSettingsInfinite} onCheckedChange={setWeekSettingsInfinite} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={saveWeekSettings}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Copy Week Dialog */}
+      <Dialog open={copyWeekFrom !== null} onOpenChange={() => setCopyWeekFrom(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Copy Week {copyWeekFrom !== null ? copyWeekFrom + 1 : ''}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Copy all day workouts from Week {copyWeekFrom !== null ? copyWeekFrom + 1 : ''} to other weeks.
+            </p>
+            <div className="space-y-2">
+              <Label>Target weeks (comma separated)</Label>
+              <Input
+                value={copyWeekTo}
+                onChange={e => setCopyWeekTo(e.target.value)}
+                placeholder={`e.g. 2, 3, 4`}
+              />
+              <p className="text-[10px] text-muted-foreground">Available: {weeks.map((_, i) => i + 1).filter(n => n !== (copyWeekFrom !== null ? copyWeekFrom + 1 : -1)).join(', ')}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCopyWeek}>Copy</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Layout>
   );
 }

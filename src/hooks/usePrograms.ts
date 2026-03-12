@@ -12,6 +12,9 @@ export interface ProgramWeek {
   weekNumber: number;
   label: string;
   days: ProgramWeekDay[];
+  phase?: string;
+  isInfinite?: boolean;
+  rangeEnd?: number; // e.g. weekNumber=1, rangeEnd=4 means "Weeks 1-4"
 }
 
 export interface ProgramExercise {
