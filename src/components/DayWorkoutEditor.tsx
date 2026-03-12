@@ -243,9 +243,10 @@ export function DayWorkoutEditor({ open, onOpenChange, day, dayLabel, onSave }: 
         open={!!setTypePicker}
         onOpenChange={() => setSetTypePicker(null)}
         title="Set Type"
-        options={SET_TYPE_OPTIONS.map(v => ({ value: v, label: SET_TYPE_LABELS[v] }))}
-        currentValue={currentSetTypeValue}
-        onSelect={(v) => {
+        items={SET_TYPE_OPTIONS}
+        value={currentSetTypeValue}
+        getLabel={(v) => SET_TYPE_LABELS[v]}
+        onConfirm={(v) => {
           if (setTypePicker) {
             updateSet(setTypePicker.exIdx, setTypePicker.setIdx, { setType: v });
             setSetTypePicker(null);
@@ -257,9 +258,10 @@ export function DayWorkoutEditor({ open, onOpenChange, day, dayLabel, onSave }: 
         open={!!intensityPicker}
         onOpenChange={() => setIntensityPicker(null)}
         title="Intensity"
-        options={INTENSITY_OPTIONS.map(v => ({ value: v, label: INTENSITY_LABELS[v] }))}
-        currentValue={currentIntensityValue}
-        onSelect={(v) => {
+        items={INTENSITY_OPTIONS}
+        value={currentIntensityValue}
+        getLabel={(v) => INTENSITY_LABELS[v]}
+        onConfirm={(v) => {
           if (intensityPicker) {
             updateSet(intensityPicker.exIdx, intensityPicker.setIdx, { intensity: v });
             setIntensityPicker(null);
@@ -270,7 +272,7 @@ export function DayWorkoutEditor({ open, onOpenChange, day, dayLabel, onSave }: 
       <InlineCreateExerciseDialog
         open={showCreateExercise}
         onOpenChange={setShowCreateExercise}
-        onCreated={(exerciseId) => {
+        onExerciseCreated={(exerciseId) => {
           const ex = [...DEFAULT_EXERCISES, ...customExercises].find(e => e.id === exerciseId);
           if (ex) addExercise({ id: ex.id, name: ex.name });
         }}
