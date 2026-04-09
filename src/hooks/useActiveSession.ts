@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { IntensityLevel, SetType } from '@/types/workout';
+import { useWorkoutStore } from '@/store/workoutStore';
+import { toast } from 'sonner';
 
 export interface SessionSetLog {
   weight: number;
@@ -134,12 +136,9 @@ export function useActiveSession() {
   // Show toast if auto-cleared
   useEffect(() => {
     if (sessionAutoCleared) {
-      toast({
-        title: 'Session logged',
-        description: "Yesterday's paused workout was logged automatically.",
-      });
+      toast("Yesterday's paused workout was logged automatically.");
     }
-  }, [sessionAutoCleared, toast]);
+  }, [sessionAutoCleared]);
 
   // Persist to localStorage whenever session changes
   useEffect(() => {
