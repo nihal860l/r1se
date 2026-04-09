@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, LogOut, Trash2, RotateCcw, Sparkles, Award } from 'lucide-react';
+import { Settings, LogOut, Trash2, RotateCcw, Sparkles, Award, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -27,6 +27,7 @@ import { useGlowStore } from '@/store/glowStore';
 import { useCoachProfile } from '@/hooks/useCoachProfile';
 import { BecomeCoachDialog } from './BecomeCoachDialog';
 import { useNavigate } from 'react-router-dom';
+import { usePref } from '@/hooks/usePref';
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
@@ -39,6 +40,7 @@ export function SettingsDialog() {
   const { toast } = useToast();
   const { glowEnabled, setGlowEnabled } = useGlowStore();
   const { isCoach, deleteProfile, refetch } = useCoachProfile();
+  const [keepOvernight, setKeepOvernight] = usePref('pref-keep-session-overnight', false);
 
   const handleResetExercises = () => {
     useWorkoutStore.setState({
@@ -131,6 +133,18 @@ export function SettingsDialog() {
                 </div>
               </div>
               <Switch checked={glowEnabled} onCheckedChange={setGlowEnabled} />
+            </div>
+
+            {/* Keep Paused Workout Overnight */}
+            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Moon className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Keep paused workout overnight</p>
+                  <p className="text-xs text-muted-foreground">Resume a paused workout the next day</p>
+                </div>
+              </div>
+              <Switch checked={keepOvernight} onCheckedChange={setKeepOvernight} />
             </div>
 
             {/* Become a Coach Toggle */}
