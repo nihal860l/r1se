@@ -122,25 +122,38 @@ export function WorkoutHistoryDetail({ log, open, onOpenChange, onDelete, onEdit
                     <span>Reps</span>
                     <span>Info</span>
                   </div>
-                  {exercise.sets.map((set, j) => (
-                    <div key={j} className="grid grid-cols-[40px_1fr_1fr_1fr] gap-1 text-sm py-1 border-b border-border/50 last:border-0">
-                      <span className="text-muted-foreground">{j + 1}</span>
-                      <span className="text-foreground font-medium">{set.weight} kg</span>
-                      <span className="text-foreground">{set.reps} reps</span>
-                      <div className="flex flex-wrap gap-1">
-                        {set.intensity && (
-                          <Badge variant="outline" className="text-xs h-5 px-1.5">
-                            {INTENSITY_LABELS[set.intensity]}
-                          </Badge>
-                        )}
-                        {set.setType && set.setType !== 'normal' && (
-                          <Badge variant="secondary" className="text-xs h-5 px-1.5">
-                            {SET_TYPE_LABELS[set.setType]}
-                          </Badge>
-                        )}
+                  {exercise.sets.map((set, j) => {
+                    const isChallenge = set.setType === 'challenge';
+                    const hasTarget = isChallenge && typeof (set as any).targetReps === 'number';
+                    const targetReps = (set as any).targetReps as number | undefined;
+                    const isPartial = hasTarget && set.reps < targetReps!;
+                    const isOver = hasTarget && set.reps > targetReps!;
+
+                    return (
+                      <div key={j} className="grid grid-cols-[40px_1fr_1fr_1fr] gap-1 text-sm py-1 border-b border-border/50 last:border-0">
+                        <span className="text-muted-foreground">{j + 1}</span>
+                        <span className="text-foreground font-medium">{set.weight} kg</span>
+                        <span className={isPartial ? 'text-amber-400' : 'text-foreground'}>
+                          {hasTarget
+                            ? `${set.reps} / ${targetReps} reps${isOver ? ' ↑' : ''}`
+                            : `${set.reps} reps`
+                          }
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {set.intensity && (
+                            <Badge variant="outline" className="text-xs h-5 px-1.5">
+                              {INTENSITY_LABELS[set.intensity]}
+                            </Badge>
+                          )}
+                          {set.setType && set.setType !== 'normal' && (
+                            <Badge variant="secondary" className="text-xs h-5 px-1.5">
+                              {SET_TYPE_LABELS[set.setType]}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}

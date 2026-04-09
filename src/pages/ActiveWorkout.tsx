@@ -394,12 +394,11 @@ export default function ActiveWorkout() {
     navigate('/');
   }, [workout, addWorkoutLog, toast, navigate, clearSession, clearCloudSession]);
 
-  // Guided mode pause handler
-  const handleGuidedPause = useCallback(async (guidedState: any) => {
+  // Guided mode pause - actual execution
+  const executeGuidedPause = useCallback(async (guidedState: any) => {
     pauseSession({
       guidedState,
     });
-    // Save to cloud after local state is updated
     setTimeout(async () => {
       const currentSession = JSON.parse(localStorage.getItem('active-workout-session') || 'null');
       if (currentSession) {
@@ -412,6 +411,17 @@ export default function ActiveWorkout() {
       navigate('/');
     }, 50);
   }, [pauseSession, toast, navigate, saveSessionToCloud]);
+
+  // Guided mode pause handler - with first-pause prompt
+  const handleGuidedPause = useCallback(async (guidedState: any) => {
+    const promptShown = localStorage.getItem('pref-pause-prompt-shown');
+    if (!promptShown) {
+      setPendingPauseAction(() => () => executeGuidedPause(guidedState));
+      setShowPausePref(true);
+    } else {
+      await executeGuidedPause(guidedState);
+    }
+  }, [executeGuidedPause]);
 
   const handleCancel = () => {
     if (mode === 'choose') {
@@ -548,6 +558,7 @@ export default function ActiveWorkout() {
           />
         </div>
         {cancelDialog}
+        <PausePreferenceDialog open={showPausePref} onChoice={handlePauseChoice} />
       </Layout>
     );
   }
