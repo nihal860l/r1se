@@ -61,7 +61,7 @@ function NativePickerInner<T>({
     if (!el) return;
 
     // Use scrollend if supported, otherwise debounced scroll
-    const supportsScrollEnd = 'onscrollend' in el;
+    const supportsScrollEnd = 'onscrollend' in window;
 
     if (supportsScrollEnd) {
       const onScrollEnd = () => handleScrollEnd();
