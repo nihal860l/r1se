@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { IntensityLevel, SetType } from '@/types/workout';
+import { useWorkoutStore } from '@/store/workoutStore';
+import { useToast } from '@/hooks/use-toast';
 
 export interface SessionSetLog {
   weight: number;
@@ -15,15 +17,13 @@ export interface ActiveSession {
   workoutId: string;
   workoutName: string;
   mode: 'guided' | 'classic';
-  startedAt: number; // timestamp ms
-  elapsedBeforePause: number; // seconds accumulated before last pause
-  pausedAt: number | null; // timestamp ms when paused, null if running
+  startedAt: number;
+  elapsedBeforePause: number;
+  pausedAt: number | null;
 
-  // Classic mode state
   exerciseLogs?: Record<string, SessionSetLog[]>;
-  workoutExercises?: any[]; // WorkoutExercise[]
+  workoutExercises?: any[];
 
-  // Guided mode state
   guidedState?: {
     currentSetIndex: number;
     phase: 'perform' | 'rest';
@@ -37,15 +37,114 @@ export interface ActiveSession {
 
 const STORAGE_KEY = 'active-workout-session';
 
+function isStaleSession(session: ActiveSession): boolean {
+  if (!session.pausedAt) return false;
+  return new Date(session.pausedAt).toDateString() !== new Date().toDateString();
+}
+
+function autoLogSession(session: ActiveSession, addWorkoutLog: any) {
+  const exercises: { exerciseId: string; exerciseName: string; sets: any[] }[] = [];
+
+  if (session.mode === 'classic' && session.exerciseLogs) {
+    Object.entries(session.exerciseLogs).forEach(([exerciseId, sets]) => {
+      const completedSets = sets
+        .filter((s) => s.completed)
+        .map((s) => ({
+          reps: s.setType === 'challenge' ? (s.challengeAccumulatedReps || 0) : (s.reps || 0),
+          weight: s.weight,
+          intensity: s.intensity || undefined,
+          setType: s.setType || undefined,
+          targetReps: s.targetReps,
+        }));
+      if (completedSets.length > 0) {
+        exercises.push({
+          exerciseId,
+          exerciseName: exerciseId, // best effort
+          sets: completedSets,
+        });
+      }
+    });
+  } else if (session.mode === 'guided' && session.guidedState?.completedSets) {
+    Object.entries(session.guidedState.completedSets).forEach(([exerciseId, sets]) => {
+      if (sets.length > 0) {
+        exercises.push({
+          exerciseId,
+          exerciseName: exerciseId,
+          sets: sets.map((s: any) => ({
+            reps: s.reps || 0,
+            weight: s.weight || 0,
+            intensity: s.intensity || undefined,
+            setType: s.setType || undefined,
+            targetReps: s.targetReps,
+          })),
+        });
+      }
+    });
+  }
+
+  if (exercises.length > 0) {
+    addWorkoutLog({
+      id: crypto.randomUUID(),
+      workoutId: session.workoutId,
+      workoutName: session.workoutName,
+      completedAt: new Date(session.pausedAt || session.startedAt),
+      duration: Math.floor(session.elapsedBeforePause / 60),
+      exercises,
+    });
+  }
+}
+
 export function useActiveSession() {
+  const addWorkoutLog = useWorkoutStore((state) => state.addWorkoutLog);
+  const { toast } = useToast();
+
   const [session, setSession] = useState<ActiveSession | null>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      const parsed: ActiveSession = JSON.parse(stored);
+
+      // Staleness check
+      if (parsed.pausedAt && isStaleSession(parsed)) {
+        const keepOvernight = (() => {
+          try {
+            return JSON.parse(localStorage.getItem('pref-keep-session-overnight') || 'false');
+          } catch {
+            return false;
+          }
+        })();
+
+        if (!keepOvernight) {
+          // Auto-log and clear
+          autoLogSession(parsed, useWorkoutStore.getState().addWorkoutLog);
+          localStorage.removeItem(STORAGE_KEY);
+          // Set flag for toast in Today page
+          sessionStorage.setItem('session-auto-cleared', 'true');
+          return null;
+        }
+      }
+
+      return parsed;
     } catch {
       return null;
     }
   });
+
+  const [sessionAutoCleared] = useState(() => {
+    const cleared = sessionStorage.getItem('session-auto-cleared') === 'true';
+    if (cleared) sessionStorage.removeItem('session-auto-cleared');
+    return cleared;
+  });
+
+  // Show toast if auto-cleared
+  useEffect(() => {
+    if (sessionAutoCleared) {
+      toast({
+        title: 'Session logged',
+        description: "Yesterday's paused workout was logged automatically.",
+      });
+    }
+  }, [sessionAutoCleared, toast]);
 
   // Persist to localStorage whenever session changes
   useEffect(() => {
@@ -81,7 +180,7 @@ export function useActiveSession() {
         ...stateSnapshot,
         elapsedBeforePause: runningElapsed,
         pausedAt: now,
-        startedAt: now, // reset reference point
+        startedAt: now,
       };
     });
   }, []);
@@ -102,7 +201,6 @@ export function useActiveSession() {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  // Get total elapsed seconds (accounts for pauses)
   const getElapsed = useCallback(() => {
     if (!session) return 0;
     if (session.pausedAt) return session.elapsedBeforePause;
@@ -118,5 +216,6 @@ export function useActiveSession() {
     clearSession,
     getElapsed,
     hasActiveSession: session !== null,
+    sessionAutoCleared,
   };
 }

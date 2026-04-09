@@ -792,6 +792,7 @@ export default function ActiveWorkout() {
 
       {/* Cancel Confirmation Dialog */}
       {cancelDialog}
+      <PausePreferenceDialog open={showPausePref} onChoice={handlePauseChoice} />
     </Layout>
   );
 }
