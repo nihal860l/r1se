@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Search, X, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PausePreferenceDialog } from '@/components/PausePreferenceDialog';
 import { Input } from '@/components/ui/input';
 import { 
   IntensityLevel, 
@@ -88,6 +89,8 @@ export default function ActiveWorkout() {
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [restoredSession, setRestoredSession] = useState(false);
+  const [showPausePref, setShowPausePref] = useState(false);
+  const [pendingPauseAction, setPendingPauseAction] = useState<(() => void) | null>(null);
   
   const [repsPicker, setRepsPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
@@ -287,14 +290,13 @@ export default function ActiveWorkout() {
     }));
   };
 
-  const handlePause = async () => {
+  const executePause = async () => {
     if (mode === 'classic') {
       pauseSession({
         exerciseLogs: exerciseLogs as any,
         workoutExercises,
       });
     }
-    // Save to cloud before navigating away
     const currentSession = JSON.parse(localStorage.getItem('active-workout-session') || 'null');
     if (currentSession) {
       await saveSessionToCloud(currentSession);
@@ -304,6 +306,24 @@ export default function ActiveWorkout() {
       description: 'Progress saved to cloud. Resume from the home screen.',
     });
     navigate('/');
+  };
+
+  const handlePause = async () => {
+    const promptShown = localStorage.getItem('pref-pause-prompt-shown');
+    if (!promptShown) {
+      setPendingPauseAction(() => executePause);
+      setShowPausePref(true);
+    } else {
+      await executePause();
+    }
+  };
+
+  const handlePauseChoice = (keepOvernight: boolean) => {
+    localStorage.setItem('pref-keep-session-overnight', JSON.stringify(keepOvernight));
+    localStorage.setItem('pref-pause-prompt-shown', JSON.stringify(true));
+    setShowPausePref(false);
+    pendingPauseAction?.();
+    setPendingPauseAction(null);
   };
 
   const finishWorkout = () => {
