@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { IntensityLevel, SetType } from '@/types/workout';
-import { useWorkoutStore } from '@/store/workoutStore';
-import { useToast } from '@/hooks/use-toast';
 
 export interface SessionSetLog {
   weight: number;
@@ -95,9 +93,6 @@ function autoLogSession(session: ActiveSession, addWorkoutLog: any) {
 }
 
 export function useActiveSession() {
-  const addWorkoutLog = useWorkoutStore((state) => state.addWorkoutLog);
-  const { toast } = useToast();
-
   const [session, setSession] = useState<ActiveSession | null>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
