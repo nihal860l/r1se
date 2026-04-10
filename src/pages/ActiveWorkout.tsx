@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Search, X, Pause } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Pause, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PausePreferenceDialog } from '@/components/PausePreferenceDialog';
 import { Input } from '@/components/ui/input';
@@ -51,8 +51,9 @@ interface SetLog {
   challengeAccumulatedReps?: number;
 }
 
-// Generate reps options 0-100
+// Generate reps options
 const REPS_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
+const CHALLENGE_REPS_OPTIONS = Array.from({ length: 201 }, (_, i) => i);
 const INTENSITY_OPTIONS: IntensityLevel[] = ['warmup', '2rir', '1rir', 'failure'];
 const SET_TYPE_OPTIONS: SetType[] = ['normal', 'superset', 'alternating', 'challenge'];
 
@@ -95,7 +96,18 @@ export default function ActiveWorkout() {
   const [repsPicker, setRepsPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
+  const [challengeRepsPicker, setChallengeRepsPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [showCreateExercise, setShowCreateExercise] = useState(false);
+
+  // Captured picker values (FIX 1: avoid stale closures)
+  const [currentPickerRepsValue, setCurrentPickerRepsValue] = useState(0);
+  const [currentPickerIntensityValue, setCurrentPickerIntensityValue] = useState<IntensityLevel>('warmup');
+  const [currentPickerSetTypeValue, setCurrentPickerSetTypeValue] = useState<SetType>('normal');
+  const [currentChallengeRepsValue, setCurrentChallengeRepsValue] = useState(0);
+
+  // Guided resume state for mode switching
+  const [guidedResumeState, setGuidedResumeState] = useState<any>(undefined);
+  const [guidedResumeElapsed, setGuidedResumeElapsed] = useState<number | undefined>(undefined);
 
   const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
@@ -109,7 +121,6 @@ export default function ActiveWorkout() {
       if (session.workoutExercises) {
         setWorkoutExercises(session.workoutExercises);
       }
-      // Restore timing
       const now = new Date();
       setStartTime(new Date(now.getTime() - session.elapsedBeforePause * 1000));
       setElapsed(session.elapsedBeforePause);
@@ -140,7 +151,6 @@ export default function ActiveWorkout() {
       setExerciseLogs(logs);
       setIsEditMode(false);
 
-      // Start a session
       startSession({
         workoutId: workout.id,
         workoutName: workout.name,
@@ -196,18 +206,13 @@ export default function ActiveWorkout() {
   const toggleSetComplete = (exerciseId: string, setIndex: number) => {
     const currentSet = exerciseLogs[exerciseId][setIndex];
     
-    // For challenge sets, accumulate reps on complete
+    // For challenge sets: just mark complete, save accumulated as reps
     if (currentSet.setType === 'challenge' && !currentSet.completed) {
-      const repsToAdd = currentSet.reps || 0;
-      const newAccumulated = (currentSet.challengeAccumulatedReps || 0) + repsToAdd;
-      const target = currentSet.targetReps || 30;
-      const challengeComplete = newAccumulated >= target;
-      
       setExerciseLogs((prev) => ({
         ...prev,
         [exerciseId]: prev[exerciseId].map((set, i) =>
           i === setIndex 
-            ? { ...set, challengeAccumulatedReps: newAccumulated, completed: challengeComplete, reps: null }
+            ? { ...set, completed: true, reps: set.challengeAccumulatedReps || 0 }
             : set
         ),
       }));
@@ -217,12 +222,8 @@ export default function ActiveWorkout() {
     updateSetLog(exerciseId, setIndex, 'completed', !currentSet.completed);
   };
 
+  // FIX 1: Remove duplicate exercise guard — allow duplicates
   const addExerciseToWorkout = (exerciseId: string) => {
-    if (workoutExercises.some((e) => e.exerciseId === exerciseId)) {
-      setShowAddExercise(false);
-      return;
-    }
-
     const newExercise: WorkoutExercise = {
       exerciseId,
       sets: [{ weight: 0, setType: 'normal', intensity: '2rir' }],
@@ -231,7 +232,7 @@ export default function ActiveWorkout() {
     setWorkoutExercises((prev) => [...prev, newExercise]);
     setExerciseLogs((prev) => ({
       ...prev,
-      [exerciseId]: [{ weight: 0, reps: null, intensity: '2rir', setType: 'normal', completed: false }],
+      [exerciseId]: [...(prev[exerciseId] || []), { weight: 0, reps: null, intensity: '2rir' as IntensityLevel, setType: 'normal' as SetType, completed: false }],
     }));
     setShowAddExercise(false);
     setExerciseSearch('');
@@ -269,8 +270,8 @@ export default function ActiveWorkout() {
       [exerciseId]: [...prev[exerciseId], { 
         weight: newWeight, 
         reps: null, 
-        intensity: newIntensity, 
-        setType: newSetType, 
+        intensity: newIntensity as IntensityLevel, 
+        setType: newSetType as SetType, 
         completed: false 
       }],
     }));
@@ -338,11 +339,12 @@ export default function ActiveWorkout() {
           exerciseName: exercise?.name || 'Unknown',
           sets: sets
             .filter((s) => s.completed)
-            .map(({ reps, weight, intensity, setType }): CompletedSet => ({
-              reps: reps || 0,
-              weight,
-              intensity: intensity || undefined,
-              setType: setType || undefined,
+            .map((s): CompletedSet => ({
+              reps: s.setType === 'challenge' ? (s.challengeAccumulatedReps || s.reps || 0) : (s.reps || 0),
+              weight: s.weight,
+              intensity: s.intensity || undefined,
+              setType: s.setType || undefined,
+              targetReps: s.targetReps,
             })),
         };
       });
@@ -423,6 +425,84 @@ export default function ActiveWorkout() {
     }
   }, [executeGuidedPause]);
 
+  // FEATURE 1: Mode switching
+  const handleSwitchToGuided = useCallback(() => {
+    if (!workout) return;
+    
+    // Build completedSets from exerciseLogs
+    const completedSetsMap: Record<string, CompletedSet[]> = {};
+    let firstIncompleteIndex = 0;
+    let setCounter = 0;
+    let foundIncomplete = false;
+    
+    workoutExercises.forEach(we => {
+      const sets = exerciseLogs[we.exerciseId] || [];
+      const completed = sets.filter(s => s.completed).map(s => ({
+        reps: s.setType === 'challenge' ? (s.challengeAccumulatedReps || s.reps || 0) : (s.reps || 0),
+        weight: s.weight,
+        intensity: s.intensity || undefined,
+        setType: s.setType || undefined,
+        targetReps: s.targetReps,
+      }));
+      if (completed.length > 0) {
+        completedSetsMap[we.exerciseId] = completed;
+      }
+      sets.forEach(s => {
+        if (!s.completed && !foundIncomplete) {
+          firstIncompleteIndex = setCounter;
+          foundIncomplete = true;
+        }
+        setCounter++;
+      });
+    });
+    
+    setGuidedResumeState({
+      currentSetIndex: foundIncomplete ? firstIncompleteIndex : 0,
+      phase: 'perform' as const,
+      reps: 10,
+      restSeconds: 90,
+      challengeAccumulated: 0,
+      challengeAttempt: 1,
+      completedSets: completedSetsMap,
+    });
+    setGuidedResumeElapsed(elapsed);
+    setMode('guided');
+    updateSession({ mode: 'guided' });
+    toast({ title: 'Switched to Guided mode' });
+  }, [workout, workoutExercises, exerciseLogs, elapsed, updateSession, toast]);
+
+  const handleSwitchToClassic = useCallback((guidedData: { completedSets: Record<string, CompletedSet[]> }) => {
+    if (!workout) return;
+    
+    const logs: Record<string, SetLog[]> = {};
+    const exs = workout.exercises;
+    
+    exs.forEach(we => {
+      const completedForExercise = guidedData.completedSets[we.exerciseId] || [];
+      logs[we.exerciseId] = we.sets.map((set, i) => {
+        const completedSet = completedForExercise[i];
+        return {
+          weight: completedSet?.weight ?? set.weight,
+          reps: completedSet?.reps ?? null,
+          intensity: (completedSet?.intensity ?? set.intensity ?? null) as IntensityLevel | null,
+          setType: (completedSet?.setType ?? set.setType ?? 'normal') as SetType,
+          completed: !!completedSet,
+          targetReps: set.targetReps,
+          challengeAccumulatedReps: 0,
+        };
+      });
+    });
+    
+    setExerciseLogs(logs);
+    setWorkoutExercises([...exs]);
+    if (!startTime) setStartTime(new Date());
+    setMode('classic');
+    setGuidedResumeState(undefined);
+    setGuidedResumeElapsed(undefined);
+    updateSession({ mode: 'classic', exerciseLogs: logs as any, workoutExercises: exs });
+    toast({ title: 'Switched to Classic mode' });
+  }, [workout, updateSession, toast, startTime]);
+
   const handleCancel = () => {
     if (mode === 'choose') {
       navigate('/');
@@ -451,18 +531,30 @@ export default function ActiveWorkout() {
     setMode(selectedMode);
   };
 
-  // Get current picker values
-  const currentRepsValue = repsPicker 
-    ? exerciseLogs[repsPicker.exerciseId]?.[repsPicker.setIndex]?.reps ?? 0
-    : 0;
-    
-  const currentIntensityValue = intensityPicker
-    ? exerciseLogs[intensityPicker.exerciseId]?.[intensityPicker.setIndex]?.intensity ?? 'warmup'
-    : 'warmup';
+  // Picker open handlers — capture value at open time (FIX 1)
+  const openRepsPicker = (exerciseId: string, setIndex: number) => {
+    const set = exerciseLogs[exerciseId]?.[setIndex];
+    if (set?.setType === 'challenge') {
+      // Challenge sets use separate picker
+      setCurrentChallengeRepsValue(0);
+      setChallengeRepsPicker({ exerciseId, setIndex });
+    } else {
+      setCurrentPickerRepsValue(set?.reps ?? 0);
+      setRepsPicker({ exerciseId, setIndex });
+    }
+  };
 
-  const currentSetTypeValue = setTypePicker
-    ? exerciseLogs[setTypePicker.exerciseId]?.[setTypePicker.setIndex]?.setType ?? 'normal'
-    : 'normal';
+  const openIntensityPicker = (exerciseId: string, setIndex: number) => {
+    const set = exerciseLogs[exerciseId]?.[setIndex];
+    setCurrentPickerIntensityValue(set?.intensity ?? 'warmup');
+    setIntensityPicker({ exerciseId, setIndex });
+  };
+
+  const openSetTypePicker = (exerciseId: string, setIndex: number) => {
+    const set = exerciseLogs[exerciseId]?.[setIndex];
+    setCurrentPickerSetTypeValue(set?.setType ?? 'normal');
+    setSetTypePicker({ exerciseId, setIndex });
+  };
 
   if (!workout) {
     return (
@@ -518,10 +610,10 @@ export default function ActiveWorkout() {
     );
   }
 
-  const resumeGuidedState = isResume && session?.guidedState ? session.guidedState : undefined;
-  const resumeElapsedTime = isResume && session ? session.elapsedBeforePause : undefined;
+  const resumeGuidedState = guidedResumeState || (isResume && session?.guidedState ? session.guidedState : undefined);
+  const resumeElapsedTime = guidedResumeElapsed ?? (isResume && session ? session.elapsedBeforePause : undefined);
 
-  // Shared cancel confirmation dialog - rendered for ALL modes
+  // Shared cancel confirmation dialog
   const cancelDialog = (
     <AlertDialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
       <AlertDialogContent>
@@ -553,6 +645,7 @@ export default function ActiveWorkout() {
             onComplete={handleGuidedComplete}
             onCancel={handleCancel}
             onPause={handleGuidedPause}
+            onSwitchToClassic={handleSwitchToClassic}
             resumeState={resumeGuidedState}
             resumeElapsed={resumeElapsedTime}
           />
@@ -576,6 +669,16 @@ export default function ActiveWorkout() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-lg font-mono text-primary">{formatTime(elapsed)}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground text-xs h-8"
+                onClick={handleSwitchToGuided}
+                title="Switch to Guided mode"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5 mr-1" />
+                Guided
+              </Button>
               <Button
                 variant={isEditMode ? 'default' : 'outline'}
                 size="sm"
@@ -646,9 +749,9 @@ export default function ActiveWorkout() {
                         targetReps={set.targetReps}
                         challengeAccumulatedReps={set.challengeAccumulatedReps}
                         onWeightChange={(weight) => updateSetLog(we.exerciseId, i, 'weight', weight)}
-                        onOpenRepsPicker={() => setRepsPicker({ exerciseId: we.exerciseId, setIndex: i })}
-                        onOpenIntensityPicker={() => setIntensityPicker({ exerciseId: we.exerciseId, setIndex: i })}
-                        onOpenSetTypePicker={() => setSetTypePicker({ exerciseId: we.exerciseId, setIndex: i })}
+                        onOpenRepsPicker={() => openRepsPicker(we.exerciseId, i)}
+                        onOpenIntensityPicker={() => openIntensityPicker(we.exerciseId, i)}
+                        onOpenSetTypePicker={() => openSetTypePicker(we.exerciseId, i)}
                         onToggleComplete={() => toggleSetComplete(we.exerciseId, i)}
                         onRemoveSet={() => removeSetFromExercise(we.exerciseId, i)}
                       />
@@ -697,10 +800,31 @@ export default function ActiveWorkout() {
         onOpenChange={(open) => !open && setRepsPicker(null)}
         title="Select Reps"
         items={REPS_OPTIONS}
-        value={currentRepsValue}
+        value={currentPickerRepsValue}
         onConfirm={(value) => {
           if (repsPicker) {
             updateSetLog(repsPicker.exerciseId, repsPicker.setIndex, 'reps', value);
+          }
+        }}
+      />
+
+      {/* Challenge Reps Picker Dialog — accumulates */}
+      <PickerDialog
+        open={challengeRepsPicker !== null}
+        onOpenChange={(open) => !open && setChallengeRepsPicker(null)}
+        title="Reps This Attempt"
+        items={CHALLENGE_REPS_OPTIONS}
+        value={currentChallengeRepsValue}
+        onConfirm={(value) => {
+          if (challengeRepsPicker) {
+            setExerciseLogs(prev => ({
+              ...prev,
+              [challengeRepsPicker.exerciseId]: prev[challengeRepsPicker.exerciseId].map((set, i) =>
+                i === challengeRepsPicker.setIndex
+                  ? { ...set, challengeAccumulatedReps: (set.challengeAccumulatedReps || 0) + value }
+                  : set
+              ),
+            }));
           }
         }}
       />
@@ -711,7 +835,7 @@ export default function ActiveWorkout() {
         onOpenChange={(open) => !open && setIntensityPicker(null)}
         title="Select Intensity"
         items={INTENSITY_OPTIONS}
-        value={currentIntensityValue}
+        value={currentPickerIntensityValue}
         onConfirm={(value) => {
           if (intensityPicker) {
             updateSetLog(intensityPicker.exerciseId, intensityPicker.setIndex, 'intensity', value);
@@ -726,7 +850,7 @@ export default function ActiveWorkout() {
         onOpenChange={(open) => !open && setSetTypePicker(null)}
         title="Select Set Type"
         items={SET_TYPE_OPTIONS}
-        value={currentSetTypeValue}
+        value={currentPickerSetTypeValue}
         onConfirm={(value) => {
           if (setTypePicker) {
             updateSetLog(setTypePicker.exerciseId, setTypePicker.setIndex, 'setType', value);
@@ -756,7 +880,7 @@ export default function ActiveWorkout() {
                 <ExerciseCard
                   key={exercise.id}
                   exercise={exercise}
-                  selected={workoutExercises.some((e) => e.exerciseId === exercise.id)}
+                  selected={false}
                   onClick={() => addExerciseToWorkout(exercise.id)}
                   showEdit={false}
                 />

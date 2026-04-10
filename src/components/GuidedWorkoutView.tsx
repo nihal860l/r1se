@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target, Pause, Check } from 'lucide-react';
+import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target, Pause, Check, Pencil, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -9,6 +9,7 @@ import {
   IntensityLevel,
 } from '@/types/workout';
 import { Exercise } from '@/types/workout';
+import { GuidedEditSheet } from './GuidedEditSheet';
 
 interface GuidedWorkoutViewProps {
   workoutName: string;
@@ -21,6 +22,7 @@ interface GuidedWorkoutViewProps {
   }[], duration: number) => void;
   onCancel: () => void;
   onPause?: (guidedState: any) => void;
+  onSwitchToClassic?: (state: { completedSets: Record<string, CompletedSet[]> }) => void;
   resumeState?: {
     currentSetIndex: number;
     phase: 'perform' | 'rest';
@@ -51,17 +53,22 @@ interface FlatSet {
 
 export function GuidedWorkoutView({
   workoutName,
-  workoutExercises,
+  workoutExercises: workoutExercisesProp,
   allExercises,
   onComplete,
   onCancel,
   onPause,
+  onSwitchToClassic,
   resumeState,
   resumeElapsed,
 }: GuidedWorkoutViewProps) {
+  // Editable exercises state (FEATURE 2)
+  const [editableExercises, setEditableExercises] = useState<WorkoutExercise[]>(workoutExercisesProp);
+  const [showEditSheet, setShowEditSheet] = useState(false);
+
   const flatSets = useMemo<FlatSet[]>(() => {
     const sets: FlatSet[] = [];
-    workoutExercises.forEach((we, exerciseIndex) => {
+    editableExercises.forEach((we, exerciseIndex) => {
       const exercise = allExercises.find((e) => e.id === we.exerciseId);
       const name = exercise?.name || 'Unknown Exercise';
       we.sets.forEach((set, setIndex) => {
@@ -79,7 +86,7 @@ export function GuidedWorkoutView({
       });
     });
     return sets;
-  }, [workoutExercises, allExercises]);
+  }, [editableExercises, allExercises]);
 
   const [currentSetIndex, setCurrentSetIndex] = useState(resumeState?.currentSetIndex ?? 0);
   const [phase, setPhase] = useState<Phase>(resumeState?.phase ?? 'perform');
@@ -98,6 +105,13 @@ export function GuidedWorkoutView({
   const [completedSets, setCompletedSets] = useState<
     Record<string, CompletedSet[]>
   >(resumeState?.completedSets as any ?? {});
+
+  // Clamp currentSetIndex if flatSets changed due to edit
+  useEffect(() => {
+    if (flatSets.length > 0 && currentSetIndex >= flatSets.length) {
+      setCurrentSetIndex(flatSets.length - 1);
+    }
+  }, [flatSets.length, currentSetIndex]);
 
   // Workout timer
   useEffect(() => {
@@ -157,7 +171,6 @@ export function GuidedWorkoutView({
     }
   }, [currentSetIndex, totalSets]);
 
-  // Set completion feedback
   const flashSetCheck = useCallback(() => {
     setShowSetCheck(true);
     setTimeout(() => setShowSetCheck(false), 800);
@@ -180,6 +193,7 @@ export function GuidedWorkoutView({
             weight: currentSet.weight,
             setType: 'challenge',
             intensity: currentSet.intensity,
+            targetReps: currentSet.targetReps,
           },
         ],
       }));
@@ -267,8 +281,35 @@ export function GuidedWorkoutView({
     onComplete(exercises, duration);
   }, [completedSets, allExercises, elapsed, onComplete]);
 
+  // FEATURE 2: Handle edit sheet save
+  const handleEditSave = useCallback((newExercises: WorkoutExercise[], newCompletedSets: Record<string, CompletedSet[]>) => {
+    setEditableExercises(newExercises);
+    setCompletedSets(newCompletedSets);
+  }, []);
+
+  // FEATURE 1: Switch to classic
+  const handleSwitchToClassic = useCallback(() => {
+    onSwitchToClassic?.({ completedSets });
+  }, [onSwitchToClassic, completedSets]);
+
   const isNewExerciseNext = currentSetIndex < totalSets - 1
     && flatSets[currentSetIndex + 1]?.exerciseId !== currentSet?.exerciseId;
+
+  // Header action buttons (shared across perform/rest)
+  const headerActions = (
+    <div className="flex items-center gap-1 w-full max-w-xs justify-end mb-2">
+      {onSwitchToClassic && (
+        <Button variant="ghost" size="sm" className="text-muted-foreground text-xs h-8" onClick={handleSwitchToClassic}>
+          <ArrowLeftRight className="w-3.5 h-3.5 mr-1" />
+          Classic
+        </Button>
+      )}
+      <Button variant="ghost" size="sm" className="text-muted-foreground text-xs h-8" onClick={() => setShowEditSheet(true)}>
+        <Pencil className="w-3.5 h-3.5 mr-1" />
+        Edit
+      </Button>
+    </div>
+  );
 
   if (totalSets === 0) {
     return (
@@ -288,6 +329,18 @@ export function GuidedWorkoutView({
     </div>
   );
 
+  // Edit sheet (rendered for all phases)
+  const editSheet = (
+    <GuidedEditSheet
+      open={showEditSheet}
+      onOpenChange={setShowEditSheet}
+      workoutExercises={editableExercises}
+      completedSets={completedSets}
+      allExercises={allExercises}
+      onSave={handleEditSave}
+    />
+  );
+
   // ===== COMPLETION SCREEN =====
   if (phase === 'complete') {
     const totalCompletedSets = Object.values(completedSets).reduce(
@@ -304,6 +357,7 @@ export function GuidedWorkoutView({
     return (
       <div key={animKey} className="flex flex-col items-center justify-center min-h-[70vh] gap-6 px-4 animate-fade-in">
         {setCheckOverlay}
+        {editSheet}
         <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center animate-completion-burst animate-glow-pulse">
           <Trophy className="w-12 h-12 text-primary" />
         </div>
@@ -347,6 +401,8 @@ export function GuidedWorkoutView({
     return (
       <div key={animKey} className="flex flex-col items-center justify-center min-h-[70vh] gap-5 px-4 animate-fade-in">
         {setCheckOverlay}
+        {editSheet}
+        {headerActions}
         <Progress value={progress} className="w-full max-w-xs h-2" />
         <p className="text-sm text-muted-foreground font-medium">
           {isChallengeInProgress
@@ -357,7 +413,6 @@ export function GuidedWorkoutView({
 
         {/* Rest timer circle */}
         <div className="relative w-40 h-40 flex items-center justify-center">
-          {/* Breathing glow behind circle */}
           {!restDone && (
             <div className="absolute inset-0 rounded-full bg-primary/10 animate-rest-breathe blur-xl" />
           )}
@@ -451,8 +506,10 @@ export function GuidedWorkoutView({
   return (
     <div key={animKey} className="flex flex-col items-center min-h-[70vh] gap-3 px-4 animate-fade-in">
       {setCheckOverlay}
+      {editSheet}
+      {headerActions}
       {/* Progress */}
-      <Progress value={progress} className="w-full max-w-xs h-2 mt-4" />
+      <Progress value={progress} className="w-full max-w-xs h-2 mt-2" />
       <div className="flex items-center justify-between w-full max-w-xs">
         <p className="text-sm text-muted-foreground">
           {isChallenge ? `Challenge Set` : `Set ${currentSetIndex + 1} of ${totalSets}`}
@@ -488,7 +545,6 @@ export function GuidedWorkoutView({
         )}
         {isChallenge ? (
           <div className="bg-primary/10 rounded-xl px-6 py-3 text-center border border-primary/20">
-            {/* Challenge circular progress ring */}
             <div className="relative w-16 h-16 mx-auto">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
                 <circle cx="32" cy="32" r="28" fill="none" className="stroke-secondary" strokeWidth="4" />
@@ -572,7 +628,7 @@ export function GuidedWorkoutView({
               Pause
             </Button>
           )}
-          <Button variant="danger" className="flex-1" onClick={onCancel}>
+          <Button variant="destructive" className="flex-1" onClick={onCancel}>
             <X className="w-4 h-4 mr-1" />
             Cancel
           </Button>
