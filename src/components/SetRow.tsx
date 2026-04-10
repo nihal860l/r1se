@@ -65,12 +65,12 @@ export const SetRow = memo(function SetRow({
   // Challenge set view in classic mode
   if (isChallenge) {
     const target = targetReps || 30;
-    const progress = Math.min(100, (challengeAccumulatedReps / target) * 100);
-    const challengeComplete = challengeAccumulatedReps >= target;
+    const progressValue = Math.min(100, (challengeAccumulatedReps / target) * 100);
+    const readyToComplete = challengeAccumulatedReps >= target;
 
     return (
       <div className={`p-3 rounded-lg transition-colors border ${
-        challengeComplete ? 'bg-primary/10 border-primary/30' : 'bg-secondary/50 border-primary/10'
+        completed ? 'bg-primary/10 border-primary/30' : readyToComplete ? 'bg-primary/5 border-primary/20' : 'bg-secondary/50 border-primary/10'
       }`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -100,17 +100,17 @@ export const SetRow = memo(function SetRow({
         </div>
         
         <div className="space-y-2">
+          <Progress value={progressValue} className="h-2" />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">
               {challengeAccumulatedReps} / {target} reps
             </span>
-            <span className={`font-semibold ${challengeComplete ? 'text-primary' : 'text-foreground'}`}>
-              {challengeComplete ? '✓ Complete' : `${target - challengeAccumulatedReps} remaining`}
+            <span className={`font-semibold ${completed || readyToComplete ? 'text-primary' : 'text-foreground'}`}>
+              {completed ? '✓ Complete' : readyToComplete ? '✓ Target reached' : `${target - challengeAccumulatedReps} remaining`}
             </span>
           </div>
-          <Progress value={progress} className="h-2" />
           
-          {!challengeComplete && !isEditMode && (
+          {!completed && !isEditMode && (
             <div className="flex items-center gap-2 mt-2">
               <Button
                 variant="outline"
@@ -118,14 +118,13 @@ export const SetRow = memo(function SetRow({
                 className="flex-1 text-foreground"
                 onClick={onOpenRepsPicker}
               >
-                Log reps: {reps !== null ? reps : '—'}
+                Log Reps
               </Button>
               <Button
-                variant={reps !== null && reps > 0 ? 'default' : 'outline'}
+                variant={readyToComplete ? 'default' : 'outline'}
                 size="icon"
                 className="h-9 w-9"
                 onClick={onToggleComplete}
-                disabled={reps === null || reps === 0}
               >
                 <Check className="w-4 h-4" />
               </Button>
