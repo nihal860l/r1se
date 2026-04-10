@@ -39,6 +39,7 @@ export interface CompletedSet {
   weight: number;
   intensity?: IntensityLevel;
   setType?: SetType;
+  targetReps?: number;
 }
 
 export interface WorkoutLog {
