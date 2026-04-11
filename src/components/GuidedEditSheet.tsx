@@ -320,39 +320,13 @@ export function GuidedEditSheet({
         getLabel={(item) => INTENSITY_LABELS[item]}
       />
 
-      {/* Add exercise dialog */}
-      <Dialog open={showAddExercise} onOpenChange={setShowAddExercise}>
-        <DialogContent className="max-w-lg max-h-[70vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Add Exercise</DialogTitle>
-          </DialogHeader>
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search exercises..."
-              value={exerciseSearch}
-              onChange={(e) => setExerciseSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex-1 h-[300px] overflow-y-auto -mx-6 px-6">
-            <div className="space-y-2 pb-4">
-              {filteredExercises.map((ex) => (
-                <ExerciseCard
-                  key={ex.id}
-                  exercise={ex}
-                  selected={false}
-                  onClick={() => addExercise(ex.id)}
-                  showEdit={false}
-                />
-              ))}
-              {filteredExercises.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No exercises found</p>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Add exercise sheet */}
+      <ExerciseMultiSelectSheet
+        open={showAddExercise}
+        onOpenChange={setShowAddExercise}
+        existingExerciseIds={editExercises.map(e => e.exerciseId)}
+        onAdd={handleAddExercises}
+      />
 
       {/* Confirm remove exercise */}
       <AlertDialog open={confirmRemoveExercise !== null} onOpenChange={(o) => !o && setConfirmRemoveExercise(null)}>
