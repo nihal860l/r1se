@@ -138,14 +138,13 @@ export function GuidedEditSheet({
     setConfirmRemoveExercise(null);
   };
 
-  const addExercise = (exerciseId: string) => {
-    const newExercise: WorkoutExercise = {
-      exerciseId,
-      sets: [{ weight: 0, setType: 'normal', intensity: '2rir' as IntensityLevel }],
-    };
-    setEditExercises(prev => [...prev, newExercise]);
+  const handleAddExercises = (exerciseIds: string[]) => {
+    const newExercises = exerciseIds.map(id => ({
+      exerciseId: id,
+      sets: [{ weight: 0, setType: 'normal' as const, intensity: '2rir' as IntensityLevel }],
+    }));
+    setEditExercises(prev => [...prev, ...newExercises]);
     setShowAddExercise(false);
-    setExerciseSearch('');
   };
 
   const openCompletedRepsPicker = (exerciseId: string, completedIndex: number) => {
