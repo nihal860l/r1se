@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, Search, X, Pause, ArrowLeftRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Pause, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PausePreferenceDialog } from '@/components/PausePreferenceDialog';
 import { Input } from '@/components/ui/input';
