@@ -427,7 +427,7 @@ export default function CreateWorkout() {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 overflow-y-auto pb-24">
               <div className="space-y-6 pb-4">
-                {selectedExercises.map((we) => {
+                {selectedExercises.map((we, idx) => {
                   const exercise = allExercises.find((e) => e.id === we.exerciseId);
                   if (!exercise) return null;
                   
