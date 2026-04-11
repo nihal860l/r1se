@@ -20,7 +20,10 @@ import { Layout } from '@/components/Layout';
 import { PickerDialog } from '@/components/PickerDialog';
 import { CreateSetRow } from '@/components/CreateSetRow';
 import { InlineCreateExerciseDialog } from '@/components/InlineCreateExerciseDialog';
+import { ExerciseMultiSelectSheet } from '@/components/ExerciseMultiSelectSheet';
 import { useUndoHistory } from '@/hooks/useUndoHistory';
+import { useDraggableList } from '@/hooks/useDraggableList';
+import { GripVertical } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,

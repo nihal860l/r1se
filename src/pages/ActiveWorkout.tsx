@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { InlineCreateExerciseDialog } from '@/components/InlineCreateExerciseDialog';
+import { ExerciseMultiSelectSheet } from '@/components/ExerciseMultiSelectSheet';
 
 interface SetLog {
   weight: number;
@@ -859,59 +860,12 @@ export default function ActiveWorkout() {
         getLabel={(item) => SET_TYPE_LABELS[item]}
       />
 
-      {/* Add Exercise Dialog */}
-      <Dialog open={showAddExercise} onOpenChange={setShowAddExercise}>
-        <DialogContent className="max-w-lg max-h-[70vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Add Exercise</DialogTitle>
-          </DialogHeader>
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search exercises..."
-              value={exerciseSearch}
-              onChange={(e) => setExerciseSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex-1 h-[300px] overflow-y-auto -mx-6 px-6">
-            <div className="space-y-2 pb-4">
-              {filteredExercises.map((exercise) => (
-                <ExerciseCard
-                  key={exercise.id}
-                  exercise={exercise}
-                  selected={false}
-                  onClick={() => addExerciseToWorkout(exercise.id)}
-                  showEdit={false}
-                />
-              ))}
-              {filteredExercises.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  No exercises found
-                </p>
-              )}
-              
-              <Button
-                variant="outline"
-                className="w-full mt-2 text-foreground"
-                onClick={() => {
-                  setShowAddExercise(false);
-                  setShowCreateExercise(true);
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Exercise
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Inline Create Exercise Dialog */}
-      <InlineCreateExerciseDialog
-        open={showCreateExercise}
-        onOpenChange={setShowCreateExercise}
-        onExerciseCreated={handleInlineExerciseCreated}
+      {/* Exercise Multi-Select Sheet */}
+      <ExerciseMultiSelectSheet
+        open={showAddExercise}
+        onOpenChange={setShowAddExercise}
+        existingExerciseIds={workoutExercises.map(we => we.exerciseId)}
+        onAdd={(ids) => ids.forEach(id => addExerciseToWorkout(id))}
       />
 
       {/* Cancel Confirmation Dialog */}
