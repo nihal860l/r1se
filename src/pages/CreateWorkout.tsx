@@ -496,11 +496,17 @@ export default function CreateWorkout() {
                 <Button
                   variant="outline"
                   className="w-full text-foreground"
-                  onClick={() => setStep('exercises')}
+                  onClick={() => setShowExerciseSheet(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Exercise
                 </Button>
+                <ExerciseMultiSelectSheet
+                  open={showExerciseSheet}
+                  onOpenChange={setShowExerciseSheet}
+                  existingExerciseIds={selectedExercises.map(e => e.exerciseId)}
+                  onAdd={handleAddExercises}
+                />
               </div>
             </div>
             {/* Sticky bottom save bar */}

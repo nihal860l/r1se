@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Minus, Trash2, Search, Check } from 'lucide-react';
+import { Plus, Minus, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -8,12 +8,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PickerDialog } from './PickerDialog';
-import { ExerciseCard } from './ExerciseCard';
+import { ExerciseMultiSelectSheet } from './ExerciseMultiSelectSheet';
 import {
   WorkoutExercise,
   CompletedSet,
@@ -33,7 +27,6 @@ import {
   INTENSITY_LABELS,
   IntensityLevel,
 } from '@/types/workout';
-import { useExerciseSearch } from '@/lib/exerciseSearch';
 
 interface GuidedEditSheetProps {
   open: boolean;
