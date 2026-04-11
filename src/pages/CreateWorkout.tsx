@@ -111,7 +111,6 @@ export default function CreateWorkout() {
   };
 
   const allExercises = [...exercises, ...customExercises];
-  const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
   const handleAddExercises = (exerciseIds: string[]) => {
     saveSnapshot();
@@ -377,44 +376,32 @@ export default function CreateWorkout() {
           </div>
         )}
 
-        {/* Step: Exercises */}
+        {/* Step: Exercises — now uses bottom sheet */}
         {step === 'exercises' && (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search exercises..."
-                value={exerciseSearch}
-                onChange={(e) => setExerciseSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <div className="space-y-2 pb-4">
-                {filteredExercises.map((exercise) => (
-                  <ExerciseCard
-                    key={exercise.id}
-                    exercise={exercise}
-                    selected={selectedExercises.some((e) => e.exerciseId === exercise.id)}
-                    onClick={() => toggleExercise(exercise.id)}
-                    showEdit={false}
-                  />
-                ))}
-                {filteredExercises.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    No exercises found
-                  </p>
-                )}
-                
-                <Button
-                  variant="outline"
-                  className="w-full mt-2 text-foreground"
-                  onClick={() => setShowCreateExercise(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Exercise
-                </Button>
-              </div>
+            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+              <p className="text-muted-foreground text-sm">
+                {selectedExercises.length} exercise{selectedExercises.length !== 1 ? 's' : ''} selected
+              </p>
+              {selectedExercises.length > 0 && (
+                <div className="w-full max-w-sm space-y-2">
+                  {selectedExercises.map((we) => {
+                    const ex = allExercises.find(e => e.id === we.exerciseId);
+                    return (
+                      <div key={we.exerciseId} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                        <span className="text-sm font-medium text-foreground">{ex?.name || 'Unknown'}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => toggleExercise(we.exerciseId)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <Button variant="outline" className="text-foreground" onClick={() => setShowExerciseSheet(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Exercises
+              </Button>
             </div>
             <div className="py-4 border-t">
               <Button 
@@ -426,6 +413,12 @@ export default function CreateWorkout() {
                 <ChevronRight className="w-5 h-5 ml-2" />
               </Button>
             </div>
+            <ExerciseMultiSelectSheet
+              open={showExerciseSheet}
+              onOpenChange={setShowExerciseSheet}
+              existingExerciseIds={selectedExercises.map(e => e.exerciseId)}
+              onAdd={handleAddExercises}
+            />
           </div>
         )}
 
@@ -439,9 +432,14 @@ export default function CreateWorkout() {
                   if (!exercise) return null;
                   
                   return (
-                    <div key={we.exerciseId} className="bg-secondary/50 rounded-lg p-4">
+                    <div key={`${we.exerciseId}-${idx}`} className={`bg-secondary/50 rounded-lg p-4 ${dragIndex === idx ? 'opacity-50 shadow-lg' : ''} ${dragOverIndex === idx ? 'border-2 border-primary/40' : ''}`}>
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-foreground">{exercise.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <div {...dragHandleProps(idx)} className="text-muted-foreground cursor-grab active:cursor-grabbing p-1">
+                            <GripVertical className="w-4 h-4" />
+                          </div>
+                          <h4 className="font-semibold text-foreground">{exercise.name}</h4>
+                        </div>
                         <Button
                           variant="ghost"
                           size="icon"
