@@ -52,7 +52,7 @@ export default function CreateWorkout() {
   const [name, setName] = useState('');
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [step, setStep] = useState<'name' | 'exercises' | 'configure'>('name');
-  const [exerciseSearch, setExerciseSearch] = useState('');
+  const [showExerciseSheet, setShowExerciseSheet] = useState(false);
   
   const [setTypePicker, setSetTypePicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
@@ -113,6 +113,17 @@ export default function CreateWorkout() {
   const allExercises = [...exercises, ...customExercises];
   const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
+  const handleAddExercises = (exerciseIds: string[]) => {
+    saveSnapshot();
+    setSelectedExercises(prev => [
+      ...prev,
+      ...exerciseIds.map(id => ({
+        exerciseId: id,
+        sets: [{ weight: 0, setType: 'normal' as SetType, intensity: '2rir' as IntensityLevel }],
+      })),
+    ]);
+  };
+
   const toggleExercise = (exerciseId: string) => {
     saveSnapshot();
     setSelectedExercises((prev) => {
@@ -126,6 +137,15 @@ export default function CreateWorkout() {
       }];
     });
   };
+
+  // Drag-to-reorder
+  const { dragHandleProps, dragOverIndex, dragIndex } = useDraggableList(
+    selectedExercises,
+    (newItems) => {
+      saveSnapshot();
+      setSelectedExercises(newItems);
+    }
+  );
 
   const addSet = (exerciseId: string) => {
     saveSnapshot();
