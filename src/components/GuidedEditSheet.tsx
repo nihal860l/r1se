@@ -51,14 +51,11 @@ export function GuidedEditSheet({
   const [editExercises, setEditExercises] = useState<WorkoutExercise[]>([]);
   const [editCompleted, setEditCompleted] = useState<Record<string, CompletedSet[]>>({});
   const [showAddExercise, setShowAddExercise] = useState(false);
-  const [exerciseSearch, setExerciseSearch] = useState('');
   const [repsPicker, setRepsPicker] = useState<{ exerciseId: string; completedIndex: number } | null>(null);
   const [repsPickerValue, setRepsPickerValue] = useState(0);
   const [intensityPicker, setIntensityPicker] = useState<{ exerciseId: string; setIndex: number } | null>(null);
   const [intensityPickerValue, setIntensityPickerValue] = useState<IntensityLevel>('warmup');
   const [confirmRemoveExercise, setConfirmRemoveExercise] = useState<string | null>(null);
-
-  const filteredExercises = useExerciseSearch(allExercises, exerciseSearch);
 
   // Initialize when sheet opens
   useEffect(() => {
