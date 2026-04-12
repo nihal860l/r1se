@@ -2,7 +2,7 @@
  import { Layout } from '@/components/Layout';
  import { useGlowStore } from '@/store/glowStore';
  import { Card, CardContent } from '@/components/ui/card';
-import { Dumbbell, Calendar, Library, ChevronRight, Sparkles } from 'lucide-react';
+import { Dumbbell, Calendar, Library, ChevronRight, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
  
  const Plan = () => {
@@ -28,13 +28,13 @@ import { cn } from '@/lib/utils';
        icon: Library,
        path: '/exercises',
      },
-     {
-       title: 'Discover Programs',
-       description: 'Get the best workout plans',
-       icon: Sparkles,
-       path: '/marketplace',
-       accent: true,
-     },
+      {
+        title: 'Coach Marketplace',
+        description: 'Programs & personal training from real coaches',
+        icon: Users,
+        path: '/marketplace',
+        accent: true,
+      },
    ];
  
    return (
