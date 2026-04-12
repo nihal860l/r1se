@@ -393,7 +393,7 @@ const Today = () => {
             </Button>
           </CardContent>
         </Card>
-        <input ref={fileInputRef} type="file" accept="image/*" capture="camera" className="hidden" onChange={handlePhotoUpload} />
+        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
 
         {/* Normal Mode: Coaching Upsell */}
         {mode === 'normal' && !relationship && (
