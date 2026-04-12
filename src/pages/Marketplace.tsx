@@ -50,8 +50,8 @@ export default function Marketplace() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Discover Programs</h1>
-            <p className="text-xs text-muted-foreground">Find the best workout plans</p>
+            <h1 className="text-xl font-bold tracking-tight">Coach Marketplace</h1>
+            <p className="text-xs text-muted-foreground">Programs built by coaches. Training run by humans.</p>
           </div>
         </div>
 
