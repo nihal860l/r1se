@@ -92,8 +92,8 @@ export default {
           to: { opacity: "1", transform: "translateX(0)" },
         },
         "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 8px hsl(142 76% 46% / 0.3)" },
-          "50%": { boxShadow: "0 0 20px hsl(142 76% 46% / 0.5), 0 0 40px hsl(142 76% 46% / 0.15)" },
+          "0%, 100%": { boxShadow: "0 0 8px hsl(189 100% 51% / 0.2)" },
+          "50%": { boxShadow: "0 0 20px hsl(189 100% 51% / 0.4), 0 0 40px hsl(189 100% 51% / 0.05)" },
         },
         "check-pop": {
           "0%": { transform: "scale(0)", opacity: "0" },
