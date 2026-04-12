@@ -51,14 +51,14 @@ import { cn } from '@/lib/utils';
                 key={option.path}
                 className={cn(
                   "bg-card cursor-pointer group transition-all duration-300 hover:border-primary/30 hover:-translate-y-0.5",
-                  glowEnabled && "card-glow border-glow hover:shadow-[0_0_25px_hsl(142_76%_46%/0.1)]"
+                  glowEnabled && "card-glow border-glow hover:shadow-[0_0_25px_hsl(189_100%_51%/0.1)]"
                 )}
                onClick={() => navigate(option.path)}
              >
                <CardContent className="flex items-center gap-4 p-5">
                  <div className={cn(
                    "w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-primary/15",
-                   glowEnabled && "group-hover:shadow-[0_0_16px_hsl(142_76%_46%/0.15)]"
+                   glowEnabled && "group-hover:shadow-[0_0_16px_hsl(189_100%_51%/0.15)]"
                  )}>
                    <option.icon className="w-6 h-6 text-primary" />
                  </div>
