@@ -38,8 +38,113 @@ export type Database = {
         }
         Relationships: []
       }
+      check_ins: {
+        Row: {
+          client_id: string
+          coach_client_id: string
+          energy_level: number | null
+          id: string
+          other_note: string | null
+          sleep_quality: number | null
+          soreness_note: string | null
+          submitted_at: string | null
+          training_feel: number | null
+          week_start_date: string
+        }
+        Insert: {
+          client_id: string
+          coach_client_id: string
+          energy_level?: number | null
+          id?: string
+          other_note?: string | null
+          sleep_quality?: number | null
+          soreness_note?: string | null
+          submitted_at?: string | null
+          training_feel?: number | null
+          week_start_date: string
+        }
+        Update: {
+          client_id?: string
+          coach_client_id?: string
+          energy_level?: number | null
+          id?: string
+          other_note?: string | null
+          sleep_quality?: number | null
+          soreness_note?: string | null
+          submitted_at?: string | null
+          training_feel?: number | null
+          week_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_ins_coach_client_id_fkey"
+            columns: ["coach_client_id"]
+            isOneToOne: false
+            referencedRelation: "coach_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coach_clients: {
+        Row: {
+          accepted_at: string | null
+          applied_at: string | null
+          assigned_program_id: string | null
+          assigned_program_week: number | null
+          check_in_day: number | null
+          client_id: string
+          client_note: string | null
+          coach_id: string
+          created_at: string | null
+          equipment_access: string | null
+          experience_level: string | null
+          id: string
+          status: string
+          training_days_per_week: number | null
+          training_goal: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          applied_at?: string | null
+          assigned_program_id?: string | null
+          assigned_program_week?: number | null
+          check_in_day?: number | null
+          client_id: string
+          client_note?: string | null
+          coach_id: string
+          created_at?: string | null
+          equipment_access?: string | null
+          experience_level?: string | null
+          id?: string
+          status?: string
+          training_days_per_week?: number | null
+          training_goal?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          applied_at?: string | null
+          assigned_program_id?: string | null
+          assigned_program_week?: number | null
+          check_in_day?: number | null
+          client_id?: string
+          client_note?: string | null
+          coach_id?: string
+          created_at?: string | null
+          equipment_access?: string | null
+          experience_level?: string | null
+          id?: string
+          status?: string
+          training_days_per_week?: number | null
+          training_goal?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       coach_profiles: {
         Row: {
+          accepts_clients: boolean
           avatar_url: string | null
           bio: string | null
           created_at: string
@@ -53,6 +158,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accepts_clients?: boolean
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -66,6 +172,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accepts_clients?: boolean
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
@@ -122,6 +229,74 @@ export type Database = {
         }
         Relationships: []
       }
+      measurement_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          logged_at: string | null
+          measurement_type_id: string
+          notes: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          logged_at?: string | null
+          measurement_type_id: string
+          notes?: string | null
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          logged_at?: string | null
+          measurement_type_id?: string
+          notes?: string | null
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurement_logs_measurement_type_id_fkey"
+            columns: ["measurement_type_id"]
+            isOneToOne: false
+            referencedRelation: "measurement_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      measurement_types: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          unit: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          unit?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          unit?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       memberships: {
         Row: {
           created_at: string
@@ -151,6 +326,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          coach_client_id: string
+          content: string
+          created_at: string | null
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          coach_client_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          coach_client_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_coach_client_id_fkey"
+            columns: ["coach_client_id"]
+            isOneToOne: false
+            referencedRelation: "coach_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -423,6 +633,39 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      progress_photos: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_visible_to_coach: boolean | null
+          notes: string | null
+          storage_path: string
+          taken_at: string | null
+          thumbnail_path: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_visible_to_coach?: boolean | null
+          notes?: string | null
+          storage_path: string
+          taken_at?: string | null
+          thumbnail_path?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_visible_to_coach?: boolean | null
+          notes?: string | null
+          storage_path?: string
+          taken_at?: string | null
+          thumbnail_path?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       workout_history: {
         Row: {
