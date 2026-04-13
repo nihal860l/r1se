@@ -67,8 +67,21 @@ const Today = () => {
   const { measurementTypes, logs: measurementLogs, getLogsForType, getTopImprovements } = useBodyMetrics();
   const { photos, uploadPhoto, getTodayPhoto } = useProgressPhotos();
   const { relationship, coachProfile: myCoach, unreadCount } = useCoachingRelationship();
+  const { activeClients } = useCoachClients();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Check-in state
+  const [checkInSubmitted, setCheckInSubmitted] = useState(false);
+  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 0 }), 'yyyy-MM-dd');
+  const [showCheckInSheet, setShowCheckInSheet] = useState(false);
+  const [checkInData, setCheckInData] = useState({ trainingFeel: 0, energy: 0, sleep: 0, sorenessNote: '', otherNote: '' });
+  const [submittingCheckIn, setSubmittingCheckIn] = useState(false);
+
+  // PR detection state
+  const [newPRs, setNewPRs] = useState<{ name: string; old: number; new: number }[]>([]);
+  const [showPRSheet, setShowPRSheet] = useState(false);
+  const prevLogCount = useRef(workoutLogs.length);
 
   useEffect(() => {
     if (!session) {
