@@ -391,7 +391,42 @@ const Today = () => {
           )}
         </div>
 
-        {/* Progress Snapshot Widget */}
+        {/* Coach Mode: Client Activity Strip */}
+        {mode === 'coach' && activeClients.length > 0 && (
+          <div className="mt-4">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] font-semibold mb-2">Client Activity</p>
+            <div className="overflow-x-auto scrollbar-none">
+              <div className="flex gap-3 pb-1" style={{ width: 'max-content' }}>
+                {activeClients.map(client => {
+                  const activityColor = 'bg-amber-500';
+                  return (
+                    <button
+                      key={client.id}
+                      onClick={() => navigate('/coach')}
+                      className="flex flex-col items-center gap-1"
+                    >
+                      <div className="relative">
+                        {client.client_profile?.avatar_url ? (
+                          <img src={client.client_profile.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-border" loading="lazy" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-secondary border-2 border-border flex items-center justify-center">
+                            <span className="text-sm font-bold text-muted-foreground">
+                              {(client.client_profile?.display_name || '?')[0]}
+                            </span>
+                          </div>
+                        )}
+                        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background ${activityColor}`} />
+                      </div>
+                      <p className="text-[9px] text-muted-foreground max-w-[48px] truncate text-center">
+                        {client.client_profile?.display_name?.split(' ')[0] || 'Client'}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
         {hasProgressData && (
           <div className="mt-4 overflow-x-auto scrollbar-none">
             <div className="flex gap-2.5 pb-2" style={{ minWidth: 'min-content' }}>
@@ -471,6 +506,27 @@ const Today = () => {
         </Card>
         <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
 
+        {/* Client Mode: Check-In Prompt */}
+        {mode === 'client' && relationship && checkInDue && !checkInSubmitted && (
+          <Card
+            className={cn("mt-4 border-primary/30 cursor-pointer", glowEnabled && "card-glow")}
+            onClick={() => setShowCheckInSheet(true)}
+          >
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-sm">Weekly Check-In Due 📋</p>
+                <p className="text-xs text-muted-foreground mt-0.5">30 seconds. Your coach is waiting.</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        )}
+        {mode === 'client' && relationship && checkInSubmitted && (
+          <div className="mt-4 px-4 py-3 rounded-xl bg-primary/10 border border-primary/20">
+            <p className="text-sm text-primary font-medium text-center">Check-in sent ✓</p>
+          </div>
+        )}
+
         {/* Normal Mode: Coaching Upsell */}
         {mode === 'normal' && !relationship && (
           <Card className={cn("mt-4 mb-4", glowEnabled && "card-glow border-glow")}>
@@ -487,6 +543,99 @@ const Today = () => {
           </Card>
         )}
       </div>
+
+      {/* Check-In Sheet */}
+      <Sheet open={showCheckInSheet} onOpenChange={setShowCheckInSheet}>
+        <SheetContent side="bottom" className="h-auto max-h-[85vh] overflow-y-auto">
+          <SheetHeader className="pb-4">
+            <SheetTitle>This Week with {myCoach?.display_name || 'Your Coach'}</SheetTitle>
+            <p className="text-sm text-muted-foreground">30 seconds. Honest answers. Your coach actually reads these.</p>
+          </SheetHeader>
+          <div className="space-y-6 pb-6">
+            <div>
+              <p className="text-sm font-medium mb-2">How did training feel overall?</p>
+              <div className="flex gap-3 justify-between">
+                {['😩','😕','😐','💪','🔥'].map((emoji, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCheckInData(d => ({ ...d, trainingFeel: i + 1 }))}
+                    className={cn("text-2xl p-2 rounded-xl transition-all", checkInData.trainingFeel === i + 1 ? "bg-primary/20 scale-110" : "bg-secondary")}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">Energy levels this week?</p>
+              <div className="flex gap-2">
+                {[1,2,3,4,5].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setCheckInData(d => ({ ...d, energy: n }))}
+                    className={cn("w-10 h-10 rounded-full border-2 transition-all", n <= checkInData.energy ? "bg-primary border-primary" : "border-border bg-secondary")}
+                  />
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">Sleep quality?</p>
+              <div className="flex gap-2">
+                {[1,2,3,4,5].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setCheckInData(d => ({ ...d, sleep: n }))}
+                    className={cn("w-10 h-10 rounded-full border-2 transition-all", n <= checkInData.sleep ? "bg-primary border-primary" : "border-border bg-secondary")}
+                  />
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">Any soreness, pain, or things to flag?</p>
+              <textarea
+                value={checkInData.sorenessNote}
+                onChange={e => setCheckInData(d => ({ ...d, sorenessNote: e.target.value }))}
+                placeholder="Nothing to report / Left knee felt off..."
+                className="w-full bg-secondary border border-border rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:border-primary/50"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">Message for your coach? <span className="text-muted-foreground font-normal">(optional)</span></p>
+              <textarea
+                value={checkInData.otherNote}
+                onChange={e => setCheckInData(d => ({ ...d, otherNote: e.target.value }))}
+                placeholder="Anything else you want them to know..."
+                className="w-full bg-secondary border border-border rounded-xl p-3 text-sm resize-none h-20 focus:outline-none focus:border-primary/50"
+              />
+            </div>
+            <Button
+              className="w-full"
+              glow={glowEnabled}
+              disabled={submittingCheckIn || (checkInData.trainingFeel === 0 && checkInData.energy === 0 && checkInData.sleep === 0)}
+              onClick={handleSubmitCheckIn}
+            >
+              {submittingCheckIn ? 'Sending...' : 'Send Check-In'}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* PR Sheet */}
+      <Sheet open={showPRSheet} onOpenChange={setShowPRSheet}>
+        <SheetContent side="bottom" className="h-auto">
+          <SheetHeader>
+            <SheetTitle>New Personal Best 🔥</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-3 py-4">
+            {newPRs.map((pr, i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-primary/10 rounded-xl border border-primary/20">
+                <p className="font-semibold text-sm">{pr.name}</p>
+                <p className="text-sm text-primary font-bold">{pr.old} → {pr.new} kg</p>
+              </div>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <AlertDialog open={showRestartConfirm} onOpenChange={setShowRestartConfirm}>
         <AlertDialogContent>
