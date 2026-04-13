@@ -146,6 +146,66 @@ const Today = () => {
 
   const hasProgressData = measurementLogs.length > 0 || workoutLogs.length > 0;
 
+  // Check-in due logic
+  const checkInDue = useMemo(() => {
+    if (mode !== 'client' || !relationship) return false;
+    const today = new Date().getDay();
+    const checkInDay = relationship.check_in_day ?? 0;
+    return today >= checkInDay;
+  }, [mode, relationship]);
+
+  const handleSubmitCheckIn = async () => {
+    if (!relationship) return;
+    setSubmittingCheckIn(true);
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.from('check_ins').upsert({
+        coach_client_id: relationship.id,
+        client_id: relationship.client_id,
+        week_start_date: weekStart,
+        training_feel: checkInData.trainingFeel,
+        energy_level: checkInData.energy,
+        sleep_quality: checkInData.sleep,
+        soreness_note: checkInData.sorenessNote || null,
+        other_note: checkInData.otherNote || null,
+      });
+      setCheckInSubmitted(true);
+      setShowCheckInSheet(false);
+      toast.success('Check-in sent to your coach!');
+    } finally {
+      setSubmittingCheckIn(false);
+    }
+  };
+
+  // PR detection effect
+  useEffect(() => {
+    if (workoutLogs.length <= prevLogCount.current) {
+      prevLogCount.current = workoutLogs.length;
+      return;
+    }
+    prevLogCount.current = workoutLogs.length;
+    const latest = workoutLogs[0];
+    if (!latest) return;
+    const prs: { name: string; old: number; new: number }[] = [];
+    const estimate1RM = (w: number, r: number) => r <= 0 || w <= 0 ? 0 : r === 1 ? w : w * (1 + r / 30);
+    latest.exercises.forEach(ex => {
+      const exName = allExercises.find(e => e.id === ex.exerciseId)?.name || 'Unknown';
+      const latestBest = Math.max(...ex.sets.map(s => estimate1RM(s.weight, s.reps || 0)));
+      const previous = workoutLogs.slice(1)
+        .flatMap(l => l.exercises.filter(e => e.exerciseId === ex.exerciseId))
+        .flatMap(e => e.sets)
+        .reduce((best, s) => Math.max(best, estimate1RM(s.weight, s.reps || 0)), 0);
+      if (latestBest > previous && previous > 0) {
+        prs.push({ name: exName, old: Math.round(previous * 10) / 10, new: Math.round(latestBest * 10) / 10 });
+      }
+    });
+    if (prs.length > 0) {
+      setNewPRs(prs);
+      setShowPRSheet(true);
+      setTimeout(() => setShowPRSheet(false), 5000);
+    }
+  }, [workoutLogs.length]);
+
   const handleStartWorkout = () => { if (workout) navigate(`/workout/${workout.id}`); };
   const handleViewWorkout = () => { if (workout) navigate(`/create-workout?edit=${workout.id}`); };
   const handleResume = () => { if (session) navigate(`/workout/${session.workoutId}?resume=true`); };
