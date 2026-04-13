@@ -1,5 +1,5 @@
 import { ReactNode, createContext, useContext, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Calendar, ClipboardList, History, TrendingUp, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GoogleAuthButton } from './GoogleAuthButton';
@@ -7,6 +7,8 @@ import { SettingsDialog } from './SettingsDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { R1SELogo } from './R1SELogo';
 import { useGlowStore } from '@/store/glowStore';
+import { useAppMode } from '@/hooks/useAppMode';
+import { useCoachingRelationship } from '@/hooks/useCoachingRelationship';
 
 interface LayoutProps {
   children: ReactNode;
@@ -34,9 +36,13 @@ const navItems = [
 
 export function Layout({ children, hideNav = false }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const { user } = useAuth();
   const glowEnabled = useGlowStore((s) => s.glowEnabled);
+  const { mode } = useAppMode();
+  const { unreadCount } = useCoachingRelationship();
+  const showMessages = mode === 'client' || mode === 'coach';
 
   return (
     <HeaderContext.Provider value={{ isOverlayOpen, setIsOverlayOpen }}>
@@ -60,6 +66,20 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
             />
             <div className="flex items-center gap-2">
               <GoogleAuthButton />
+              {showMessages && (
+                <button
+                  onClick={() => navigate('/messages')}
+                  className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Messages"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full flex items-center justify-center px-1">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
               {user && <SettingsDialog />}
             </div>
           </div>
