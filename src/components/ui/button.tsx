@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_hsl(142_76%_46%/0.4)]",
+          "bg-primary text-primary-foreground hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_hsl(189_100%_51%/0.4)]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_hsl(0_62%_50%/0.4)]",
         outline:
@@ -20,7 +20,7 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent/10 hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         success:
-          "bg-[hsl(var(--btn-success))] text-[hsl(var(--btn-success-foreground))] hover:bg-[hsl(var(--btn-success)/0.9)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_hsl(142_60%_40%/0.4)]",
+          "bg-[hsl(var(--btn-success))] text-[hsl(var(--btn-success-foreground))] hover:bg-[hsl(var(--btn-success)/0.9)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_hsl(189_80%_40%/0.4)]",
         danger:
           "bg-[hsl(var(--btn-danger))] text-[hsl(var(--btn-danger-foreground))] hover:bg-[hsl(var(--btn-danger)/0.9)] hover:-translate-y-0.5 hover:shadow-[0_4px_20px_hsl(0_62%_50%/0.4)]",
       },
@@ -52,7 +52,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         className={cn(
           buttonVariants({ variant, size, className }),
-          glow && "shadow-[0_0_16px_hsl(142_76%_46%/0.35),0_0_6px_hsl(142_76%_46%/0.2)]"
+          glow && "shadow-[0_0_20px_hsl(189_100%_51%/0.4),0_0_40px_hsl(189_100%_51%/0.15)]"
         )}
         ref={ref}
         {...props}
