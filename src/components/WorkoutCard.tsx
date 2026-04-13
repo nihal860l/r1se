@@ -38,7 +38,7 @@ export function WorkoutCard({ workout, onStart }: WorkoutCardProps) {
   return (
     <Card className={cn(
       "bg-card transition-all duration-300 hover:border-primary/25 hover:-translate-y-0.5",
-      glowEnabled && "card-glow border-glow glowEnabled && "card-glow border-glow hover:shadow-[0_0_25px_hsl(189_100%_51%/0.1)]""
+      glowEnabled && "card-glow border-glow hover:shadow-[0_0_25px_hsl(189_100%_51%/0.1)]"
     )}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
