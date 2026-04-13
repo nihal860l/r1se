@@ -4,7 +4,7 @@ import { useWorkoutStore } from '@/store/workoutStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Play, Calendar, BedDouble, Dumbbell, Eye, RotateCcw, PlayCircle, CheckCircle2, BookOpen, Clock, ChevronRight, Camera, TrendingUp, Flame, ArrowUp, ArrowDown } from 'lucide-react';
-import { format, isToday, differenceInDays } from 'date-fns';
+import { format, isToday, differenceInDays, startOfWeek } from 'date-fns';
 import { exercises } from '@/data/exercises';
 import { useActiveSession } from '@/hooks/useActiveSession';
 import { useCloudSession } from '@/hooks/useCloudSession';
@@ -13,7 +13,10 @@ import { useAppMode } from '@/hooks/useAppMode';
 import { useBodyMetrics } from '@/hooks/useBodyMetrics';
 import { useProgressPhotos } from '@/hooks/useProgressPhotos';
 import { useCoachingRelationship } from '@/hooks/useCoachingRelationship';
+import { useCoachClients } from '@/hooks/useCoachClients';
 import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
