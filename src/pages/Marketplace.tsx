@@ -11,6 +11,9 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Search, Users, Award, Star, ArrowLeft, Dumbbell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGlowStore } from '@/store/glowStore';
+import { useAppMode } from '@/hooks/useAppMode';
+import { useCoachingRelationship } from '@/hooks/useCoachingRelationship';
+import { supabase } from '@/integrations/supabase/client';
 
 const CATEGORY_CHIPS = ['All', 'Hypertrophy', 'Strength', 'Calisthenics', 'Mobility', 'Full Body', 'Split', 'HIIT', 'Endurance'];
 const DIFFICULTY_CHIPS = ['All', 'Beginner', 'Intermediate', 'Advanced'];
@@ -22,6 +25,31 @@ export default function Marketplace() {
   const [searchInput, setSearchInput] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeDifficulty, setActiveDifficulty] = useState('All');
+  const { mode } = useAppMode();
+  const { relationship, coachProfile: myCoach } = useCoachingRelationship();
+  const [coaches, setCoaches] = useState<any[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('coach_profiles')
+        .select('user_id, display_name, avatar_url, is_verified, accepts_clients')
+        .eq('status', 'active')
+        .eq('accepts_clients', true)
+        .limit(10);
+      if (data) {
+        const enriched = await Promise.all(data.map(async (coach: any) => {
+          const { count } = await supabase
+            .from('programs')
+            .select('id', { count: 'exact', head: true })
+            .eq('coach_id', coach.user_id)
+            .eq('status', 'published');
+          return { ...coach, programCount: count || 0 };
+        }));
+        setCoaches(enriched);
+      }
+    })();
+  }, []);
 
   // Debounced search
   useEffect(() => {
@@ -54,6 +82,58 @@ export default function Marketplace() {
             <p className="text-xs text-muted-foreground">Programs built by coaches. Training run by humans.</p>
           </div>
         </div>
+
+        {/* Client coaching active banner */}
+        {mode === 'client' && relationship && myCoach && (
+          <div className="flex items-center justify-between p-4 bg-primary/10 border border-primary/20 rounded-xl">
+            <div className="flex items-center gap-2">
+              {myCoach.avatar_url ? (
+                <img src={myCoach.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">{(myCoach.display_name || '?')[0]}</span>
+                </div>
+              )}
+              <p className="text-sm font-medium">Coached by <span className="text-primary">{myCoach.display_name}</span></p>
+            </div>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => navigate('/messages')}>
+              Message
+            </Button>
+          </div>
+        )}
+
+        {/* Coaches strip */}
+        {coaches.length > 0 && (
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em] font-semibold mb-2">Work with a Coach</p>
+            <div className="overflow-x-auto scrollbar-none">
+              <div className="flex gap-3 pb-1" style={{ width: 'max-content' }}>
+                {coaches.map(coach => (
+                  <button
+                    key={coach.user_id}
+                    onClick={() => navigate(`/coach/${coach.user_id}`)}
+                    className="flex flex-col items-center gap-1.5 p-2"
+                  >
+                    <div className="relative">
+                      {coach.avatar_url ? (
+                        <img src={coach.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-border" loading="lazy" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-border flex items-center justify-center">
+                          <span className="text-lg font-bold text-primary">{(coach.display_name || '?')[0]}</span>
+                        </div>
+                      )}
+                      {coach.is_verified && (
+                        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-[8px] text-primary-foreground font-bold">✓</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-medium text-foreground max-w-[56px] truncate text-center">{coach.display_name}</p>
+                    <p className="text-[9px] text-muted-foreground">{coach.programCount} programs</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative">
