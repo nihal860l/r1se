@@ -92,7 +92,7 @@ const History = () => {
                 key={log.id} 
                 className={cn(
                   "relative cursor-pointer transition-all duration-300 hover:border-primary/25 hover:-translate-y-0.5",
-                  glowEnabled && "hover:shadow-[0_0_20px_hsl(142_76%_46%/0.06)]"
+                  glowEnabled && "glowEnabled && "hover:shadow-[0_0_20px_hsl(189_100%_51%/0.06)]""
                 )}
                 onClick={() => setSelectedLog(log)}
               >

@@ -74,7 +74,7 @@ export function Layout({ children, hideNav = false }: LayoutProps) {
           <nav className={cn(
             "fixed bottom-0 left-0 right-0 z-40 backdrop-blur-xl border-t",
             glowEnabled 
-              ? "bg-card/80 border-primary/15 shadow-[0_-4px_30px_hsl(142_76%_46%/0.06)]" 
+              ? "bg-card/80 border-primary/15 ? "bg-card/80 border-primary/15 shadow-[0_-4px_30px_hsl(189_100%_51%/0.06)]"" 
               : "bg-card/90 border-border/50"
           )}>
             <div className="container max-w-lg mx-auto">
