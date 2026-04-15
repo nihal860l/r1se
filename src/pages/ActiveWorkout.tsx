@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Plus, Pencil, Trash2, X, Pause, ArrowLeftRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Pause, ArrowLeftRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PausePreferenceDialog } from '@/components/PausePreferenceDialog';
 import { Input } from '@/components/ui/input';
@@ -715,7 +715,18 @@ export default function ActiveWorkout() {
               return (
                 <div key={we.exerciseId} className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-foreground">{exercise.name}</h3>
+                    <div className="flex items-center flex-wrap gap-y-1">
+                      <h3 className="font-semibold text-foreground">{exercise.name}</h3>
+                      {we.notes && (
+                        <button
+                          onClick={() => setActiveNoteExerciseId(activeNoteExerciseId === we.exerciseId ? null : we.exerciseId)}
+                          className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-[10px] font-medium"
+                        >
+                          <Info className="w-3 h-3" />
+                          Note
+                        </button>
+                      )}
+                    </div>
                     {isEditMode && (
                       <Button
                         variant="ghost"
@@ -727,6 +738,11 @@ export default function ActiveWorkout() {
                       </Button>
                     )}
                   </div>
+                  {activeNoteExerciseId === we.exerciseId && we.notes && (
+                    <p className="text-sm text-muted-foreground bg-card border border-border rounded-xl p-3">
+                      {we.notes}
+                    </p>
+                  )}
                   <div className="space-y-2">
                     <div className="grid grid-cols-[48px_1fr_56px_64px_40px] gap-1 text-xs text-muted-foreground px-1">
                       <span className="text-center text-muted-foreground">Set</span>

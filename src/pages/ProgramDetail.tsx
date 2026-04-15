@@ -156,11 +156,13 @@ export default function ProgramDetail() {
           name: workoutName,
           exercises: day.exercises.map(ex => ({
             exerciseId: ex.exerciseId,
+            notes: ex.notes || undefined,
             sets: ex.sets.map(s => ({
               weight: s.targetWeight || 0,
               reps: s.targetReps || 10,
               setType: (s.setType as any) || 'normal',
               intensity: (s.intensity as any) || undefined,
+              targetReps: s.setType === 'challenge' ? s.targetReps : undefined,
             })),
           })),
           createdAt: new Date(),

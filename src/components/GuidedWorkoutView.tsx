@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target, Pause, Check, Pencil, ArrowLeftRight } from 'lucide-react';
+import { Timer, ChevronRight, Trophy, Minus, Plus, SkipForward, X, Target, Pause, Check, Pencil, ArrowLeftRight, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -49,6 +49,7 @@ interface FlatSet {
   totalSetsForExercise: number;
   isChallenge: boolean;
   targetReps?: number;
+  notes?: string;
 }
 
 export function GuidedWorkoutView({
@@ -82,6 +83,7 @@ export function GuidedWorkoutView({
           totalSetsForExercise: we.sets.length,
           isChallenge: set.setType === 'challenge',
           targetReps: set.targetReps,
+          notes: we.notes,
         });
       });
     });
@@ -158,6 +160,7 @@ export function GuidedWorkoutView({
     : 0;
 
   const moveToNextSet = useCallback(() => {
+    setShowNotePopover(false);
     if (currentSetIndex >= totalSets - 1) {
       setPhase('complete');
       setAnimKey((k) => k + 1);
@@ -243,6 +246,7 @@ export function GuidedWorkoutView({
   }, [currentSet, currentSetIndex, totalSets, reps, challengeAccumulated, flashSetCheck]);
 
   const handleSkipSet = useCallback(() => {
+    setShowNotePopover(false);
     setChallengeAccumulated(0);
     setChallengeAttempt(1);
     if (currentSetIndex >= totalSets - 1) {
@@ -523,6 +527,23 @@ export function GuidedWorkoutView({
           Exercise {currentSet.exerciseIndex + 1}
         </p>
         <h2 className="text-2xl font-bold text-foreground mt-1">{currentSet.exerciseName}</h2>
+        {currentSet.notes && (
+          <button
+            onClick={() => setShowNotePopover(true)}
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium"
+          >
+            <Info className="w-3 h-3" />
+            Coach note
+          </button>
+        )}
+        {showNotePopover && currentSet.notes && (
+          <p
+            className="mt-2 text-sm text-muted-foreground bg-card border border-border rounded-xl p-3 max-w-xs mx-auto"
+            onClick={() => setShowNotePopover(false)}
+          >
+            {currentSet.notes}
+          </p>
+        )}
         {isChallenge ? (
           <div className="flex items-center justify-center gap-1 mt-1 text-primary">
             <Target className="w-4 h-4" />
