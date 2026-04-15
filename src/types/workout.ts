@@ -25,6 +25,7 @@ export interface WorkoutSet {
 export interface WorkoutExercise {
   exerciseId: string;
   sets: WorkoutSet[];
+  notes?: string; // Coach note attached to this exercise
 }
 
 export interface Workout {
