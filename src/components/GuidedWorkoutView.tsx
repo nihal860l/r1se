@@ -98,6 +98,7 @@ export function GuidedWorkoutView({
   const [elapsed, setElapsed] = useState(resumeElapsed ?? 0);
   const [animKey, setAnimKey] = useState(0);
   const [showSetCheck, setShowSetCheck] = useState(false);
+  const [showNotePopover, setShowNotePopover] = useState(false);
   const restIntervalRef = useRef<ReturnType<typeof setInterval>>();
 
   // Challenge set state
