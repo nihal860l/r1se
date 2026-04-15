@@ -88,6 +88,7 @@ export default function ActiveWorkout() {
   const [elapsed, setElapsed] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAddExercise, setShowAddExercise] = useState(false);
+  const [activeNoteExerciseId, setActiveNoteExerciseId] = useState<string | null>(null);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [restoredSession, setRestoredSession] = useState(false);
