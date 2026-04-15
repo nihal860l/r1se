@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Layout } from '@/components/Layout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useGlowStore } from '@/store/glowStore';
 import { toast } from 'sonner';
 import type { Program, ProgramWeek } from '@/hooks/usePrograms';
+import { DEFAULT_WEEKLY_ASSIGNMENTS } from '@/types/workout';
 
 export default function ProgramDetail() {
   const { programId } = useParams<{ programId: string }>();
@@ -171,9 +173,50 @@ export default function ProgramDetail() {
       }
     }
 
+    // Create a workout plan from week 1 of the program
+    const week1 = manifest[0];
+    if (week1 && importedCount > 0) {
+      const addWorkoutPlan = useWorkoutStore.getState().addWorkoutPlan;
+      const weeklyAssignments = { ...DEFAULT_WEEKLY_ASSIGNMENTS };
+      const dayMap: Record<string, number> = {
+        'monday': 1, 'mon': 1,
+        'tuesday': 2, 'tue': 2,
+        'wednesday': 3, 'wed': 3,
+        'thursday': 4, 'thu': 4,
+        'friday': 5, 'fri': 5,
+        'saturday': 6, 'sat': 6,
+        'sunday': 0, 'sun': 0,
+      };
+      week1.days.forEach((day, i) => {
+        if (!day.workoutName || day.exercises.length === 0) return;
+        const workoutName = `${program!.title} – ${day.workoutName}`;
+        const workout = useWorkoutStore.getState().workouts.find(w => w.name === workoutName);
+        if (!workout) return;
+        const labelLower = day.label?.toLowerCase() || '';
+        const dayIndex = Object.entries(dayMap).find(([key]) => labelLower.includes(key))?.[1];
+        const assignIndex = dayIndex !== undefined ? dayIndex : Math.min(i + 1, 6);
+        weeklyAssignments[String(assignIndex) as keyof typeof weeklyAssignments] = {
+          type: 'Workout',
+          workoutId: workout.id,
+        };
+      });
+      addWorkoutPlan({
+        id: crypto.randomUUID(),
+        planId: crypto.randomUUID(),
+        name: program!.title,
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        endDate: null,
+        weeklyAssignments,
+        exceptions: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+      });
+    }
+
     setShowImportDialog(false);
     if (importedCount > 0) {
-      toast.success(`Imported ${importedCount} workout${importedCount > 1 ? 's' : ''} to your library`);
+      toast.success(`Imported ${importedCount} workout${importedCount > 1 ? 's' : ''} and created "${program!.title}" plan`);
     } else {
       toast.info('No new workouts to import');
     }
