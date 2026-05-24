@@ -138,7 +138,7 @@ export function useActiveSession() {
   // Show toast if auto-cleared
   useEffect(() => {
     if (sessionAutoCleared) {
-      toast("Yesterday's paused workout was logged automatically.");
+      toast("Yesterday's paused workout was logged automatically.", { duration: 7000 });
     }
   }, [sessionAutoCleared]);
 
