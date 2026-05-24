@@ -115,8 +115,9 @@ export function useActiveSession() {
           // Auto-log and clear
           autoLogSession(parsed, useWorkoutStore.getState().addWorkoutLog);
           localStorage.removeItem(STORAGE_KEY);
-          // Set flag for toast in Today page
-          sessionStorage.setItem('session-auto-cleared', 'true');
+          // Set flag for toast in Today page (keyed by pausedAt to ensure once-only)
+          const clearedKey = `session-auto-cleared:${parsed.pausedAt}`;
+          localStorage.setItem(clearedKey, 'true');
           return null;
         }
       }
@@ -128,9 +129,10 @@ export function useActiveSession() {
   });
 
   const [sessionAutoCleared] = useState(() => {
-    const cleared = sessionStorage.getItem('session-auto-cleared') === 'true';
-    if (cleared) sessionStorage.removeItem('session-auto-cleared');
-    return cleared;
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('session-auto-cleared:'));
+    if (keys.length === 0) return false;
+    keys.forEach(k => localStorage.removeItem(k));
+    return true;
   });
 
   // Show toast if auto-cleared
