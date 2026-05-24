@@ -65,6 +65,10 @@ const AppInner = () => {
   const glowEnabled = useGlowStore((s) => s.glowEnabled);
   const { user, loading } = useAuth();
 
+  useEffect(() => {
+    prefetchAllRoutes();
+  }, []);
+
   if (loading) {
     return (
       <div className="dark min-h-screen bg-background flex items-center justify-center">
@@ -77,6 +81,7 @@ const AppInner = () => {
     <div className={`dark${glowEnabled ? ' glow-enabled' : ''}`}>
       <Toaster />
       <Sonner />
+      <InstallPrompt />
       <BrowserRouter>
         {user ? <AuthenticatedRoutes /> : (
           <Suspense fallback={<PageSpinner />}>
