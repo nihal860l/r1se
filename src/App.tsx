@@ -9,15 +9,20 @@ import { useAuth } from "./hooks/useAuth";
 import { CloudSyncProvider } from "./components/CloudSyncProvider";
 import React, { Suspense } from "react";
 
-const Today = React.lazy(() => import('./pages/Today'));
-const Plan = React.lazy(() => import('./pages/Plan'));
+import React, { Suspense, useEffect } from "react";
+import { prefetchAllRoutes } from "@/lib/prefetchRoutes";
+import { InstallPrompt } from "./components/InstallPrompt";
+
+import Today from './pages/Today';
+import Plan from './pages/Plan';
+import Progress from './pages/Progress';
+import History from './pages/History';
+
 const Workouts = React.lazy(() => import('./pages/Workouts'));
 const WorkoutPlan = React.lazy(() => import('./pages/WorkoutPlan'));
 const Exercises = React.lazy(() => import('./pages/Exercises'));
-const History = React.lazy(() => import('./pages/History'));
 const CreateWorkout = React.lazy(() => import('./pages/CreateWorkout'));
 const ActiveWorkout = React.lazy(() => import('./pages/ActiveWorkout'));
-const Progress = React.lazy(() => import('./pages/Progress'));
 const CoachDashboard = React.lazy(() => import('./pages/CoachDashboard'));
 const ProgramBuilder = React.lazy(() => import('./pages/ProgramBuilder'));
 const Marketplace = React.lazy(() => import('./pages/Marketplace'));
