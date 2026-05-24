@@ -7,8 +7,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { useGlowStore } from "@/store/glowStore";
 import { useAuth } from "./hooks/useAuth";
 import { CloudSyncProvider } from "./components/CloudSyncProvider";
-import React, { Suspense } from "react";
-
 import React, { Suspense, useEffect } from "react";
 import { prefetchAllRoutes } from "@/lib/prefetchRoutes";
 import { InstallPrompt } from "./components/InstallPrompt";
